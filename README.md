@@ -2,6 +2,21 @@
 
 Aplicacao Angular 20 com Standalone Components e Tailwind CSS para operacao da fila e gestao da merenda escolar.
 
+## Objetivo funcional da camera
+
+A tela de operacao da fila utilizara a camera do dispositivo para identificar o aluno de duas formas:
+
+1. **Leitura de QR Code:** a camera le o codigo apresentado pelo aluno e extrai seu codigo publico.
+2. **Reconhecimento facial:** o `face-api.js` compara localmente o rosto capturado com os descriptors previamente cadastrados, sem enviar fotografias ao backend.
+
+Os dois modos convergem para o mesmo fluxo: depois de identificar o aluno, o frontend envia `alunoCodigo` e `metodoIdentificacao` para `POST /api/v1/fila/validacoes`. A autorizacao, o bloqueio de consumo duplicado e a auditoria permanecem como responsabilidades exclusivas do backend.
+
+O operador podera alternar entre QR Code e reconhecimento facial. Quando a correspondencia facial for insuficiente ou ambigua, a aplicacao devera solicitar a leitura do QR Code como alternativa segura.
+
+## Dashboard gerencial
+
+A rota `/dashboard` consulta `GET /api/v1/gestao/consolidacoes` para exibir os indicadores consolidados da fila. Ao acionar a geracao do relatorio, o frontend chama `POST /api/v1/relatorios-ia` e consulta o status em `GET /api/v1/relatorios-ia/{id}` ate o processamento terminar.
+
 ## Execucao
 
 Pre-requisitos: Node.js LTS e pnpm.
@@ -11,7 +26,7 @@ pnpm install
 pnpm start
 ```
 
-A aplicacao abre em `http://localhost:4200` e espera a API em `http://localhost:8080`.
+A aplicacao abre em `http://localhost:4200` e espera a API em `http://localhost:8081`.
 
 ## Organizacao por features
 

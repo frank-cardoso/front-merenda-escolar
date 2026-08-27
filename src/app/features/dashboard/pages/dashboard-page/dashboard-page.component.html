@@ -1,5 +1,178 @@
-<section>
-  <p class="text-sm font-semibold uppercase tracking-wider text-emerald-700">Gestao</p>
-  <h2 class="mt-2 text-3xl font-bold">Dashboard gerencial</h2>
-  <p class="mt-2 text-slate-600">Os indicadores deterministas e os relatorios de IA serao implementados nas proximas fases.</p>
+<section class="space-y-6">
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <p class="text-sm font-semibold uppercase tracking-wider text-emerald-700">Gestao</p>
+      <h2 class="mt-2 text-3xl font-bold">Dashboard gerencial</h2>
+      <p class="mt-2 max-w-3xl text-slate-600">
+        Acompanhe o consumo consolidado da fila e gere a analise logistica com IA.
+      </p>
+    </div>
+
+    <div class="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-[160px_140px_auto]">
+      <label class="text-sm font-semibold text-slate-700">
+        Data
+        <input
+          type="date"
+          class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          [ngModel]="dataReferencia()"
+          (ngModelChange)="atualizarFiltros('data', $event)"
+        />
+      </label>
+
+      <label class="text-sm font-semibold text-slate-700">
+        Turno
+        <select
+          class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          [ngModel]="turno()"
+          (ngModelChange)="atualizarFiltros('turno', $event)"
+        >
+          @for (item of turnos; track item) {
+            <option [value]="item">{{ item }}</option>
+          }
+        </select>
+      </label>
+
+      <button
+        type="button"
+        class="self-end rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:bg-slate-300"
+        [disabled]="gerandoRelatorio() || carregandoConsolidacao()"
+        (click)="gerarRelatorio()"
+      >
+        {{ gerandoRelatorio() ? 'Gerando...' : 'Gerar relatorio IA' }}
+      </button>
+    </div>
+  </div>
+
+  @if (erro()) {
+    <div class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm font-medium text-amber-900" role="alert">
+      {{ erro() }}
+    </div>
+  }
+
+  @if (consolidacao(); as dados) {
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-sm font-medium text-slate-500">Cardapio</p>
+        <p class="mt-2 text-lg font-bold text-slate-900">{{ dados.cardapio }}</p>
+      </article>
+
+      <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-sm font-medium text-slate-500">Planejado</p>
+        <p class="mt-2 text-3xl font-bold text-slate-900">{{ dados.quantidadePlanejada }}</p>
+      </article>
+
+      <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-sm font-medium text-slate-500">Autorizados</p>
+        <p class="mt-2 text-3xl font-bold text-emerald-700">{{ dados.consumosAutorizados }}</p>
+      </article>
+
+      <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-sm font-medium text-slate-500">Sobra estimada</p>
+        <p class="mt-2 text-3xl font-bold text-slate-900">{{ dados.sobraEstimada }}</p>
+      </article>
+    </div>
+
+    <div class="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+      <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <p class="text-sm font-medium text-slate-500">Taxa de consumo</p>
+            <p class="mt-1 text-2xl font-bold text-slate-900">{{ dados.taxaConsumoPlanejado }}%</p>
+          </div>
+          <p class="text-sm font-semibold text-slate-500">{{ dados.tentativasBloqueadas }} bloqueios</p>
+        </div>
+        <div class="mt-4 h-3 overflow-hidden rounded-full bg-slate-100">
+          <div class="h-full rounded-full bg-emerald-600" [style.width.%]="dados.taxaConsumoPlanejado"></div>
+        </div>
+      </article>
+
+      <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <p class="text-sm font-medium text-slate-500">Relatorio IA</p>
+            <p class="mt-1 text-lg font-bold text-slate-900">
+              {{ relatorio()?.status || 'Nao gerado' }}
+            </p>
+          </div>
+          @if (relatorio(); as relatorioAtual) {
+            <p class="rounded-md bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              {{ relatorioAtual.provedor || 'fake' }} / {{ relatorioAtual.modelo || 'regras-locais-v1' }}
+            </p>
+          }
+        </div>
+
+        @if (gerandoRelatorio()) {
+          <p class="mt-4 text-sm text-slate-600">Consultando status do relatorio...</p>
+        }
+
+        @if (relatorio(); as relatorioAtual) {
+          <dl class="mt-4 grid gap-2 rounded-md bg-slate-50 p-3 text-xs text-slate-600 sm:grid-cols-2">
+            <div>
+              <dt class="font-semibold text-slate-500">ID</dt>
+              <dd class="mt-1 break-all font-mono">{{ relatorioAtual.id }}</dd>
+            </div>
+            <div>
+              <dt class="font-semibold text-slate-500">Tentativas</dt>
+              <dd class="mt-1">{{ relatorioAtual.tentativas }}</dd>
+            </div>
+            @if (relatorioAtual.concluidoEm) {
+              <div class="sm:col-span-2">
+                <dt class="font-semibold text-slate-500">Concluido em</dt>
+                <dd class="mt-1">{{ relatorioAtual.concluidoEm }}</dd>
+              </div>
+            }
+          </dl>
+        }
+
+        @if (relatorio()?.status === 'FALHOU') {
+          <p class="mt-4 rounded-md bg-red-50 p-3 text-sm font-medium text-red-800">
+            {{ relatorio()?.erro }}
+          </p>
+        }
+
+        @if (relatorio()?.resultado; as analise) {
+          <div class="mt-5 space-y-4">
+            <p class="text-slate-700">{{ analise.resumoExecutivo }}</p>
+
+            <div class="grid gap-3 sm:grid-cols-2">
+              <div class="rounded-md bg-emerald-50 p-3">
+                <p class="text-xs font-semibold uppercase tracking-wider text-emerald-700">Aceitacao</p>
+                <p class="mt-1 text-xl font-bold text-emerald-900">{{ analise.nivelAceitacao }}</p>
+              </div>
+              <div class="rounded-md bg-amber-50 p-3">
+                <p class="text-xs font-semibold uppercase tracking-wider text-amber-700">Risco desperdicio</p>
+                <p class="mt-1 text-xl font-bold text-amber-900">{{ analise.riscoDesperdicio }}</p>
+              </div>
+            </div>
+
+            <div>
+              <p class="text-sm font-bold text-slate-900">Evidencias</p>
+              <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+                @for (item of analise.evidencias; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+
+            <div>
+              <p class="text-sm font-bold text-slate-900">Recomendacoes</p>
+              <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+                @for (item of analise.recomendacoes; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+
+            <p class="rounded-md bg-slate-50 p-3 text-xs font-medium text-slate-500">
+              {{ analise.observacaoLimitacoes }}
+            </p>
+          </div>
+        }
+      </article>
+    </div>
+  } @else if (carregandoConsolidacao()) {
+    <div class="rounded-lg border border-slate-200 bg-white p-8 text-center font-semibold text-slate-600 shadow-sm">
+      Carregando indicadores...
+    </div>
+  }
 </section>

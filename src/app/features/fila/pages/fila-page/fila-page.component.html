@@ -1,15 +1,23 @@
-<div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
+<div
+  class="mx-auto grid w-full gap-6 lg:items-start"
+  [class.max-w-2xl]="!processando() && !resultado() && !erro()"
+  [class.max-w-5xl]="processando() || resultado() || erro()"
+  [class.lg:grid-cols-[minmax(0,1fr)_360px]]="processando() || resultado() || erro()"
+>
   <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
     <p class="text-sm font-semibold uppercase tracking-wider text-emerald-700">Operacao na fila</p>
     <h2 class="mt-2 text-3xl font-bold">Leia o QR Code do aluno</h2>
     <p class="mt-2 text-slate-600">A validacao e feita sem IA e registra somente um consumo por turno.</p>
     <div class="mt-6"><app-qr-scanner (codigoLido)="validarQr($event)" /></div>
   </section>
-  <aside class="space-y-4">
+
+  @if (processando() || resultado() || erro()) {
+  <aside class="space-y-4 lg:sticky lg:top-6">
     @if (processando()) {
       <div class="rounded-2xl bg-blue-50 p-8 text-center font-semibold text-blue-800" role="status">Validando consumo...</div>
     }
     @if (resultado(); as validacao) { <app-resultado-validacao [resultado]="validacao" /> }
     @if (erro()) { <div class="rounded-2xl border border-amber-300 bg-amber-50 p-6 text-amber-900" role="alert">{{ erro() }}</div> }
   </aside>
+  }
 </div>

@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { finalize } from 'rxjs';
 import { QrScannerComponent } from '../../components/qr-scanner/qr-scanner.component';
 import { ResultadoValidacaoComponent } from '../../components/resultado-validacao/resultado-validacao.component';
+import { parseAlunoQrCode } from '../../application/qr-code-parser';
 import { FilaApiService } from '../../data-access/fila-api.service';
 import { ValidarConsumoResponse } from '../../models/fila.models';
 
@@ -17,18 +18,21 @@ export class FilaPageComponent {
   readonly processando = signal(false);
   readonly resultado = signal<ValidarConsumoResponse | null>(null);
   readonly erro = signal<string | null>(null);
+  readonly ultimoCodigoLido = signal<string | null>(null);
 
   validarQr(conteudoQr: string): void {
     if (this.processando()) return;
-    const alunoCodigo = this.extrairAlunoCodigo(conteudoQr);
-    if (!alunoCodigo) {
-      this.erro.set('QR Code invalido: nao foi possivel identificar o codigo do aluno.');
+    const qrCode = parseAlunoQrCode(conteudoQr);
+    if (!qrCode.valido) {
+      this.ultimoCodigoLido.set(null);
+      this.erro.set('QR Code invalido ou fora do padrao esperado.');
       return;
     }
 
+    this.ultimoCodigoLido.set(qrCode.alunoCodigo);
     this.processando.set(true);
     this.erro.set(null);
-    this.filaApi.validarConsumo({ alunoCodigo, metodoIdentificacao: 'QR_CODE' })
+    this.filaApi.validarConsumo({ alunoCodigo: qrCode.alunoCodigo, metodoIdentificacao: 'QR_CODE' })
       .pipe(finalize(() => this.processando.set(false)))
       .subscribe({
         next: (resultado) => this.resultado.set(resultado),
@@ -36,17 +40,8 @@ export class FilaPageComponent {
       });
   }
 
-  private extrairAlunoCodigo(conteudoQr: string): string | null {
-    const valor = conteudoQr.trim();
-    if (!valor) return null;
-
-    try {
-      const payload = JSON.parse(valor) as { alunoCodigo?: unknown; codigo?: unknown };
-      const codigo = payload.alunoCodigo ?? payload.codigo;
-      return typeof codigo === 'string' && codigo.trim() ? codigo.trim() : null;
-    } catch {
-      return valor;
-    }
+  validarCodigoManual(alunoCodigo: string): void {
+    this.validarQr(alunoCodigo);
   }
 
   private montarMensagemErro(erro: HttpErrorResponse): string {

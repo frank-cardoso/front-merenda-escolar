@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, NgZone, OnDestroy, inject, output, signal } from '@angular/core';
-import { Html5Qrcode, Html5QrcodeCameraScanConfig, Html5QrcodeResult } from 'html5-qrcode';
+import { ChangeDetectionStrategy, Component, NgZone, OnDestroy, inject, input, output, signal } from '@angular/core';
+import { Html5Qrcode, Html5QrcodeCameraScanConfig } from 'html5-qrcode';
 
 type EstadoScanner = 'inativo' | 'carregando' | 'lendo' | 'erro';
 
@@ -9,6 +9,7 @@ type EstadoScanner = 'inativo' | 'carregando' | 'lendo' | 'erro';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class QrScannerComponent implements OnDestroy {
+  readonly leituraPausada = input(false);
   readonly codigoLido = output<string>();
   readonly scannerId = `qr-reader-${Math.random().toString(36).slice(2)}`;
   readonly estado = signal<EstadoScanner>('inativo');
@@ -82,6 +83,8 @@ export class QrScannerComponent implements OnDestroy {
   }
 
   private processarLeitura(codigo: string): void {
+    if (this.leituraPausada()) return;
+
     const agora = Date.now();
     if (codigo === this.ultimoCodigo && agora - this.ultimaLeituraEm < 3000) return;
     this.ultimoCodigo = codigo;

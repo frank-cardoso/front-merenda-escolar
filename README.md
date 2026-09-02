@@ -13,6 +13,32 @@ Os dois modos convergem para o mesmo fluxo: depois de identificar o aluno, o fro
 
 O operador podera alternar entre QR Code e reconhecimento facial. Quando a correspondencia facial for insuficiente ou ambigua, a aplicacao devera solicitar a leitura do QR Code como alternativa segura.
 
+### Formatos aceitos no QR Code
+
+O formato mais simples para demonstracao e texto puro:
+
+```text
+ALU-001
+```
+
+Tambem e aceito um JSON versionado, mais adequado para integracao futura:
+
+```json
+{
+  "tipo": "ALUNO",
+  "alunoCodigo": "ALU-001",
+  "versao": 1
+}
+```
+
+Para compatibilidade com testes iniciais, o frontend tambem aceita JSON com campo `codigo`.
+
+Codigos mockados disponiveis no backend:
+
+- `ALU-001`
+- `ALU-002`
+- `ALU-003`
+
 ## Dashboard gerencial
 
 A rota `/dashboard` consulta `GET /api/v1/gestao/consolidacoes` para exibir os indicadores consolidados da fila. Ao acionar a geracao do relatorio, o frontend chama `POST /api/v1/relatorios-ia` e consulta o status em `GET /api/v1/relatorios-ia/{id}` ate o processamento terminar.

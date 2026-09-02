@@ -8,13 +8,45 @@
     <p class="text-sm font-semibold uppercase tracking-wider text-emerald-700">Operacao na fila</p>
     <h2 class="mt-2 text-3xl font-bold">Leia o QR Code do aluno</h2>
     <p class="mt-2 text-slate-600">A validacao e feita sem IA e registra somente um consumo por turno.</p>
-    <div class="mt-6"><app-qr-scanner (codigoLido)="validarQr($event)" /></div>
+    <div class="mt-6">
+      <app-qr-scanner [leituraPausada]="processando()" (codigoLido)="validarQr($event)" />
+    </div>
+
+    <div class="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+      <label class="text-sm font-semibold text-slate-700" for="codigo-manual">
+        Codigo de teste
+      </label>
+      <div class="mt-2 flex flex-col gap-3 sm:flex-row">
+        <input
+          #codigoManual
+          id="codigo-manual"
+          type="text"
+          value="ALU-001"
+          class="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+          placeholder="ALU-001"
+        />
+        <button
+          type="button"
+          class="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+          [disabled]="processando()"
+          (click)="validarCodigoManual(codigoManual.value)"
+        >
+          Validar codigo
+        </button>
+      </div>
+      <p class="mt-2 text-xs text-slate-500">Use ALU-001, ALU-002 ou ALU-003 para demonstracao.</p>
+    </div>
   </section>
 
   @if (processando() || resultado() || erro()) {
   <aside class="space-y-4 lg:sticky lg:top-6">
     @if (processando()) {
-      <div class="rounded-2xl bg-blue-50 p-8 text-center font-semibold text-blue-800" role="status">Validando consumo...</div>
+      <div class="rounded-2xl bg-blue-50 p-8 text-center font-semibold text-blue-800" role="status">
+        @if (ultimoCodigoLido()) {
+          <span class="block text-sm text-blue-700">QR lido: {{ ultimoCodigoLido() }}</span>
+        }
+        <span class="mt-1 block">Validando consumo...</span>
+      </div>
     }
     @if (resultado(); as validacao) { <app-resultado-validacao [resultado]="validacao" /> }
     @if (erro()) { <div class="rounded-2xl border border-amber-300 bg-amber-50 p-6 text-amber-900" role="alert">{{ erro() }}</div> }

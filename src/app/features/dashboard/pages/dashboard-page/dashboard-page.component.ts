@@ -18,7 +18,7 @@ export class DashboardPageComponent implements OnInit {
   private readonly dashboardApi = inject(DashboardApiService);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly turnos: Turno[] = ['MANHA', 'TARDE', 'NOITE'];
+  readonly turnos: Turno[] = ['MANHA', 'TARDE', 'NOITE', 'INTEGRAL'];
   readonly dataReferencia = signal(this.formatarDataLocal(new Date()));
   readonly turno = signal<Turno>('NOITE');
   readonly consolidacao = signal<ConsolidacaoConsumo | null>(null);

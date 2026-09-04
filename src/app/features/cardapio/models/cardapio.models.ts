@@ -1,4 +1,4 @@
-export type Turno = 'MANHA' | 'TARDE' | 'NOITE';
+export type Turno = 'MANHA' | 'TARDE' | 'NOITE' | 'INTEGRAL';
 
 export interface ItemCardapio {
   nome: string;

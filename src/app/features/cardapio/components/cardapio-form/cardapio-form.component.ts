@@ -24,7 +24,7 @@ export class CardapioFormComponent {
   readonly salvar = output<CardapioRequest>();
   readonly cancelar = output<void>();
 
-  readonly turnos: Turno[] = ['MANHA', 'TARDE', 'NOITE'];
+  readonly turnos: Turno[] = ['MANHA', 'TARDE', 'NOITE', 'INTEGRAL'];
 
   readonly data = signal(this.hoje());
   readonly turno = signal<Turno>('MANHA');

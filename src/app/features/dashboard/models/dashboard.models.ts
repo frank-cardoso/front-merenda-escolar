@@ -1,4 +1,4 @@
-export type Turno = 'MANHA' | 'TARDE' | 'NOITE';
+export type Turno = 'MANHA' | 'TARDE' | 'NOITE' | 'INTEGRAL';
 export type StatusRelatorioIA = 'PENDENTE' | 'PROCESSANDO' | 'CONCLUIDO' | 'FALHOU';
 
 export interface ConsolidacaoConsumo {

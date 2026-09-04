@@ -11,7 +11,7 @@ export interface ValidarConsumoResponse {
   sinal: 'VERDE' | 'VERMELHO';
   alunoId: string | null;
   alunoNome: string | null;
-  turno: 'MANHA' | 'TARDE' | 'NOITE' | null;
+  turno: 'MANHA' | 'TARDE' | 'NOITE' | 'INTEGRAL' | null;
   cardapio: string | null;
   registradoEm: string | null;
   motivo: string | null;

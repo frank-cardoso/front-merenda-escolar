@@ -35,7 +35,7 @@
       <button
         type="button"
         class="self-end rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:bg-slate-300"
-        [disabled]="gerandoRelatorio() || carregandoConsolidacao()"
+        [disabled]="gerandoRelatorio() || carregandoConsolidacao() || !consolidacao()"
         (click)="gerarRelatorio()"
       >
         {{ gerandoRelatorio() ? 'Gerando...' : 'Gerar relatorio IA' }}
@@ -49,7 +49,35 @@
     </div>
   }
 
+  <div class="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4">
+    <label class="min-w-0 flex-1 text-sm font-semibold">Relatórios salvos para esta data e turno
+      <select class="mt-2 w-full rounded-md border border-slate-300 p-2 text-sm"
+        [ngModel]="relatorio()?.id || ''" (ngModelChange)="abrirRelatorio($event)" [disabled]="gerandoRelatorio()">
+        <option value="">Selecione um relatório (últimos 20)</option>
+        @for (item of historico(); track item.id) {
+          <option [value]="item.id">{{ item.criadoEm }} · {{ item.status }} · {{ item.provedor || 'pendente' }}</option>
+        }
+      </select>
+    </label>
+    <button type="button" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold"
+      (click)="verIndicadoresAtuais()" [disabled]="gerandoRelatorio()">Atualizar indicadores atuais</button>
+  </div>
+  @if (erroHistorico()) { <p class="text-sm text-amber-800" role="status">{{ erroHistorico() }}</p> }
+
+  @if (relatorio()) {
+    <p class="text-sm font-semibold text-emerald-800">Exibindo a fotografia do relatório selecionado. Os indicadores abaixo não são recalculados ao reabri-lo.</p>
+    @if (!relatorio()?.indicadores) {
+      <p class="text-sm text-slate-600">Este relatório ainda não possui uma fotografia de indicadores (relatório antigo ou processamento em andamento).</p>
+    }
+  } @else {
+    <p class="text-sm text-slate-600">Indicadores atuais · {{ dataReferencia() }} · {{ turno() }}</p>
+    @if (carregandoIndicadores()) { <p class="text-sm text-slate-500" role="status">Calculando indicadores...</p> }
+    @if (erroIndicadores()) { <p class="text-sm text-amber-800" role="alert">{{ erroIndicadores() }}</p> }
+  }
+  @if (indicadoresExibidos(); as indicadores) { <app-indicadores-logisticos [dados]="indicadores" /> }
+
   @if (consolidacao(); as dados) {
+    @if (!relatorio()) {
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <p class="text-sm font-medium text-slate-500">Cardapio</p>
@@ -67,12 +95,13 @@
       </article>
 
       <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <p class="text-sm font-medium text-slate-500">Sobra estimada</p>
+        <p class="text-sm font-medium text-slate-500">Planejado sem consumo registrado</p>
         <p class="mt-2 text-3xl font-bold text-slate-900">{{ dados.sobraEstimada }}</p>
       </article>
     </div>
 
-    <div class="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+    }
+      @if (!relatorio()) {
       <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div class="flex items-center justify-between gap-4">
           <div>
@@ -82,9 +111,14 @@
           <p class="text-sm font-semibold text-slate-500">{{ dados.tentativasBloqueadas }} bloqueios</p>
         </div>
         <div class="mt-4 h-3 overflow-hidden rounded-full bg-slate-100">
-          <div class="h-full rounded-full bg-emerald-600" [style.width.%]="dados.taxaConsumoPlanejado"></div>
+          <div class="h-full rounded-full bg-emerald-600" [style.width.%]="dados.taxaConsumoPlanejado > 100 ? 100 : dados.taxaConsumoPlanejado"></div>
         </div>
       </article>
+
+      }
+  } @else if (carregandoConsolidacao()) {
+    <p class="text-sm text-slate-500">Carregando consolidação...</p>
+  }
 
       <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div class="flex items-center justify-between gap-4">
@@ -137,11 +171,11 @@
             <div class="grid gap-3 sm:grid-cols-2">
               <div class="rounded-md bg-emerald-50 p-3">
                 <p class="text-xs font-semibold uppercase tracking-wider text-emerald-700">Aceitacao</p>
-                <p class="mt-1 text-xl font-bold text-emerald-900">{{ analise.nivelAceitacao }}</p>
+                <p class="mt-1 text-xl font-bold text-emerald-900">{{ analise.nivelAceitacao === 'NAO_AVALIAVEL' ? 'Não avaliável' : analise.nivelAceitacao }}</p>
               </div>
               <div class="rounded-md bg-amber-50 p-3">
                 <p class="text-xs font-semibold uppercase tracking-wider text-amber-700">Risco desperdicio</p>
-                <p class="mt-1 text-xl font-bold text-amber-900">{{ analise.riscoDesperdicio }}</p>
+                <p class="mt-1 text-xl font-bold text-amber-900">{{ analise.riscoDesperdicio === 'NAO_AVALIAVEL' ? 'Não avaliável' : analise.riscoDesperdicio }}</p>
               </div>
             </div>
 
@@ -169,10 +203,4 @@
           </div>
         }
       </article>
-    </div>
-  } @else if (carregandoConsolidacao()) {
-    <div class="rounded-lg border border-slate-200 bg-white p-8 text-center font-semibold text-slate-600 shadow-sm">
-      Carregando indicadores...
-    </div>
-  }
 </section>

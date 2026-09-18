@@ -1,3 +1,5 @@
+import { IndicadoresLogisticos } from './indicadores.models';
+
 export type Turno = 'MANHA' | 'TARDE' | 'NOITE' | 'INTEGRAL';
 export type StatusRelatorioIA = 'PENDENTE' | 'PROCESSANDO' | 'CONCLUIDO' | 'FALHOU';
 
@@ -34,6 +36,7 @@ export interface AnaliseLogistica {
 }
 
 export interface RelatorioIA {
+  indicadores: IndicadoresLogisticos | null;
   id: string;
   dataReferencia: string;
   turno: Turno;
@@ -47,4 +50,12 @@ export interface RelatorioIA {
   criadoEm: string;
   iniciadoEm: string | null;
   concluidoEm: string | null;
+}
+
+export interface RelatorioResumo {
+  id: string;
+  status: StatusRelatorioIA;
+  criadoEm: string;
+  provedor: string | null;
+  modelo: string | null;
 }

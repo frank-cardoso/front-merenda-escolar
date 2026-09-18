@@ -2,6 +2,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { IndicadoresLogisticos } from '../models/indicadores.models';
+import { RelatorioResumo } from '../models/dashboard.models';
 import {
   ConsolidacaoConsumo,
   CriarRelatorioIARequest,
@@ -26,5 +28,15 @@ export class DashboardApiService {
 
   buscarRelatorio(id: string): Observable<RelatorioIA> {
     return this.http.get<RelatorioIA>(`${this.baseUrl}/relatorios-ia/${id}`);
+  }
+
+  buscarIndicadores(data: string, turno: Turno): Observable<IndicadoresLogisticos> {
+    const params = new HttpParams().set('data', data).set('turno', turno);
+    return this.http.get<IndicadoresLogisticos>(`${this.baseUrl}/gestao/indicadores`, { params });
+  }
+
+  listarRelatorios(data: string, turno: Turno): Observable<RelatorioResumo[]> {
+    const params = new HttpParams().set('data', data).set('turno', turno);
+    return this.http.get<RelatorioResumo[]>(`${this.baseUrl}/relatorios-ia`, { params });
   }
 }

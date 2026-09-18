@@ -45,6 +45,26 @@ A rota `/dashboard` consulta `GET /api/v1/gestao/consolidacoes` para exibir os i
 
 ## Execucao
 
+### Dashboard de inteligência logística
+
+O dashboard consulta indicadores determinísticos sem gerar relatório IA. A feature agora inclui:
+
+- Meta interna de execução (padrão 80%), alunos únicos e repetições do dia/turno.
+- Ranking Chart.js de execução registrada por item, com tabela acessível de amostras, escolas e origens.
+- Contagens por turma; adesão e rejeição não são inferidas sem dados de presença.
+- Estados explícitos de dados insuficientes para ingredientes e ciclo de cardápio.
+- Histórico dos últimos 20 relatórios por data/turno. Abrir um relatório exibe a fotografia
+  persistida com ele, sem nova chamada ao Gemini. Relatórios antigos podem não ter fotografia.
+
+`IndicadoresLogisticosComponent` recebe os dados por input e não depende do roteamento.
+Chart.js é carregado no chunk da rota dashboard. O gráfico não usa números produzidos pelo LLM.
+Ao mudar filtros, as consultas anteriores são canceladas para não misturar dados de turnos.
+
+Após atualizar: execute `pnpm install` e reinicie Java, Python e Angular. A API precisa expor
+`GET /api/v1/gestao/indicadores` e `GET /api/v1/relatorios-ia?data&turno`.
+
+### Desenvolvimento local
+
 Pre-requisitos: Node.js LTS e pnpm.
 
 ```powershell

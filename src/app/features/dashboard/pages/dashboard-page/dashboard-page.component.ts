@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription, exhaustMap, finalize, map, switchMap, takeWhile, timeout, timer } from 'rxjs';
 import { DashboardApiService } from '../../data-access/dashboard-api.service';
@@ -21,18 +21,18 @@ export class DashboardPageComponent implements OnInit {
   private historicoConsulta = new Subscription();
 
   readonly turnos: Turno[] = ['MANHA', 'TARDE', 'NOITE', 'INTEGRAL'];
+  readonly aba = signal<'indicadores' | 'analise'>('indicadores');
   readonly dataReferencia = signal(this.formatarDataLocal(new Date()));
   readonly turno = signal<Turno>('NOITE');
   readonly consolidacao = signal<ConsolidacaoConsumo | null>(null);
   readonly relatorio = signal<RelatorioIA | null>(null);
   readonly historico = signal<RelatorioResumo[]>([]);
   readonly indicadoresAtuais = signal<IndicadoresLogisticos | null>(null);
-  readonly indicadoresExibidos = computed(() => this.relatorio()
-    ? this.relatorio()!.indicadores : this.indicadoresAtuais());
   readonly carregandoConsolidacao = signal(false);
   readonly carregandoIndicadores = signal(false);
   readonly gerandoRelatorio = signal(false);
   readonly erro = signal<string | null>(null);
+  readonly erroConsolidacao = signal<string | null>(null);
   readonly erroIndicadores = signal<string | null>(null);
   readonly erroHistorico = signal<string | null>(null);
 
@@ -46,6 +46,13 @@ export class DashboardPageComponent implements OnInit {
 
   ngOnInit(): void { this.carregarConsolidacao(); }
 
+  selecionarAba(aba: 'indicadores' | 'analise'): void {
+    if (this.aba() === aba) return;
+    this.aba.set(aba);
+    if (aba === 'analise') this.carregarHistorico();
+    else this.carregarConsolidacao();
+  }
+
   carregarConsolidacao(): void {
     this.consultas.unsubscribe();
     this.consultas = new Subscription();
@@ -53,19 +60,18 @@ export class DashboardPageComponent implements OnInit {
     this.indicadoresAtuais.set(null);
     this.carregandoConsolidacao.set(true);
     this.carregandoIndicadores.set(true);
-    this.erro.set(null);
+    this.erroConsolidacao.set(null);
     this.erroIndicadores.set(null);
     const data = this.dataReferencia();
     const turno = this.turno();
     this.consultas.add(this.dashboardApi.buscarConsolidacao(data, turno)
       .pipe(finalize(() => this.carregandoConsolidacao.set(false)))
       .subscribe({ next: dados => this.consolidacao.set(dados),
-        error: erro => this.erro.set(this.montarMensagemErro(erro)) }));
+        error: erro => this.erroConsolidacao.set(this.montarMensagemErro(erro)) }));
     this.consultas.add(this.dashboardApi.buscarIndicadores(data, turno)
       .pipe(finalize(() => this.carregandoIndicadores.set(false)))
       .subscribe({ next: dados => this.indicadoresAtuais.set(dados),
         error: () => this.erroIndicadores.set('Não foi possível carregar os indicadores. Tente atualizar.') }));
-    this.carregarHistorico();
   }
 
   gerarRelatorio(): void {
@@ -95,18 +101,26 @@ export class DashboardPageComponent implements OnInit {
   }
 
   verIndicadoresAtuais(): void {
-    this.acompanhamento.unsubscribe();
-    this.relatorio.set(null);
     this.carregarConsolidacao();
   }
 
   atualizarFiltros(campo: 'data' | 'turno', valor: string): void {
     if (!valor) return;
     this.acompanhamento.unsubscribe();
+    this.consultas.unsubscribe();
+    this.historicoConsulta.unsubscribe();
     if (campo === 'data') this.dataReferencia.set(valor);
     if (campo === 'turno') this.turno.set(valor as Turno);
     this.relatorio.set(null);
-    this.carregarConsolidacao();
+    this.consolidacao.set(null);
+    this.indicadoresAtuais.set(null);
+    this.historico.set([]);
+    this.erro.set(null);
+    this.erroConsolidacao.set(null);
+    this.erroIndicadores.set(null);
+    this.erroHistorico.set(null);
+    if (this.aba() === 'indicadores') this.carregarConsolidacao();
+    else this.carregarHistorico();
   }
 
   private consultarAteTerminar(id: string) {

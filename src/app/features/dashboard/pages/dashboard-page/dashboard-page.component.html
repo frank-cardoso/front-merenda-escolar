@@ -8,7 +8,7 @@
       </p>
     </div>
 
-    <div class="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-[160px_140px_auto]">
+    <div class="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-[160px_140px]">
       <label class="text-sm font-semibold text-slate-700">
         Data
         <input
@@ -32,175 +32,179 @@
         </select>
       </label>
 
-      <button
-        type="button"
-        class="self-end rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:bg-slate-300"
-        [disabled]="gerandoRelatorio() || carregandoConsolidacao() || !consolidacao()"
-        (click)="gerarRelatorio()"
-      >
-        {{ gerandoRelatorio() ? 'Gerando...' : 'Gerar relatorio IA' }}
-      </button>
     </div>
   </div>
 
-  @if (erro()) {
-    <div class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm font-medium text-amber-900" role="alert">
-      {{ erro() }}
+  <nav class="flex gap-2" aria-label="Visões do dashboard">
+    <button type="button" class="rounded-lg border px-4 py-2 font-semibold"
+      [class.bg-emerald-100]="aba() === 'indicadores'" [attr.aria-pressed]="aba() === 'indicadores'"
+      (click)="selecionarAba('indicadores')">Indicadores</button>
+    <button type="button" class="rounded-lg border px-4 py-2 font-semibold"
+      [class.bg-emerald-100]="aba() === 'analise'" [attr.aria-pressed]="aba() === 'analise'"
+      (click)="selecionarAba('analise')">Análise IA</button>
+  </nav>
+
+  @if (aba() === 'analise') {
+    <p class="text-sm text-slate-600">Gere uma análise de aceitação e desperdício a partir dos dados disponíveis. Consultar relatórios salvos não gera uma nova análise.</p>
+    <button type="button" class="rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-300"
+      [disabled]="gerandoRelatorio()" (click)="gerarRelatorio()">
+      {{ gerandoRelatorio() ? 'Acompanhando relatório...' : 'Gerar análise IA' }}
+    </button>
+    @if (erro()) {
+      <div class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm font-medium text-amber-900" role="alert">
+        {{ erro() }}
+      </div>
+    }
+
+    <div class="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4">
+      <label class="min-w-0 flex-1 text-sm font-semibold">Relatórios salvos para esta data e turno
+        <select class="mt-2 w-full rounded-md border border-slate-300 p-2 text-sm"
+          [ngModel]="relatorio()?.id || ''" (ngModelChange)="abrirRelatorio($event)" [disabled]="gerandoRelatorio()">
+          <option value="">Selecione um relatório (últimos 20)</option>
+          @for (item of historico(); track item.id) {
+            <option [value]="item.id">{{ item.criadoEm }} · {{ item.status }} · {{ item.provedor || 'pendente' }}</option>
+          }
+        </select>
+      </label>
     </div>
+    @if (erroHistorico()) { <p class="text-sm text-amber-800" role="status">{{ erroHistorico() }}</p> }
+
   }
 
-  <div class="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4">
-    <label class="min-w-0 flex-1 text-sm font-semibold">Relatórios salvos para esta data e turno
-      <select class="mt-2 w-full rounded-md border border-slate-300 p-2 text-sm"
-        [ngModel]="relatorio()?.id || ''" (ngModelChange)="abrirRelatorio($event)" [disabled]="gerandoRelatorio()">
-        <option value="">Selecione um relatório (últimos 20)</option>
-        @for (item of historico(); track item.id) {
-          <option [value]="item.id">{{ item.criadoEm }} · {{ item.status }} · {{ item.provedor || 'pendente' }}</option>
-        }
-      </select>
-    </label>
+  @if (aba() === 'indicadores') {
+    <p class="text-sm text-slate-600">Consulte metas, ranking e atendimentos sem gerar análise de IA.</p>
     <button type="button" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold"
-      (click)="verIndicadoresAtuais()" [disabled]="gerandoRelatorio()">Atualizar indicadores atuais</button>
-  </div>
-  @if (erroHistorico()) { <p class="text-sm text-amber-800" role="status">{{ erroHistorico() }}</p> }
-
-  @if (relatorio()) {
-    <p class="text-sm font-semibold text-emerald-800">Exibindo a fotografia do relatório selecionado. Os indicadores abaixo não são recalculados ao reabri-lo.</p>
-    @if (!relatorio()?.indicadores) {
-      <p class="text-sm text-slate-600">Este relatório ainda não possui uma fotografia de indicadores (relatório antigo ou processamento em andamento).</p>
-    }
-  } @else {
+      (click)="verIndicadoresAtuais()" [disabled]="carregandoIndicadores() || carregandoConsolidacao()">Atualizar indicadores atuais</button>
     <p class="text-sm text-slate-600">Indicadores atuais · {{ dataReferencia() }} · {{ turno() }}</p>
     @if (carregandoIndicadores()) { <p class="text-sm text-slate-500" role="status">Calculando indicadores...</p> }
     @if (erroIndicadores()) { <p class="text-sm text-amber-800" role="alert">{{ erroIndicadores() }}</p> }
-  }
-  @if (indicadoresExibidos(); as indicadores) { <app-indicadores-logisticos [dados]="indicadores" /> }
+    @if (erroConsolidacao()) { <p class="text-sm text-amber-800" role="alert">{{ erroConsolidacao() }}</p> }
+    @if (indicadoresAtuais(); as indicadores) { <app-indicadores-logisticos [dados]="indicadores" /> }
 
-  @if (consolidacao(); as dados) {
-    @if (!relatorio()) {
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    @if (consolidacao(); as dados) {
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <p class="text-sm font-medium text-slate-500">Cardapio</p>
         <p class="mt-2 text-lg font-bold text-slate-900">{{ dados.cardapio }}</p>
       </article>
 
-      <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <p class="text-sm font-medium text-slate-500">Planejado</p>
-        <p class="mt-2 text-3xl font-bold text-slate-900">{{ dados.quantidadePlanejada }}</p>
-      </article>
+        <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-sm font-medium text-slate-500">Planejado</p>
+          <p class="mt-2 text-3xl font-bold text-slate-900">{{ dados.quantidadePlanejada }}</p>
+        </article>
 
-      <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <p class="text-sm font-medium text-slate-500">Autorizados</p>
-        <p class="mt-2 text-3xl font-bold text-emerald-700">{{ dados.consumosAutorizados }}</p>
-      </article>
+        <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-sm font-medium text-slate-500">Autorizados</p>
+          <p class="mt-2 text-3xl font-bold text-emerald-700">{{ dados.consumosAutorizados }}</p>
+        </article>
 
-      <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <p class="text-sm font-medium text-slate-500">Planejado sem consumo registrado</p>
-        <p class="mt-2 text-3xl font-bold text-slate-900">{{ dados.sobraEstimada }}</p>
-      </article>
-    </div>
+        <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-sm font-medium text-slate-500">Planejado sem consumo registrado</p>
+          <p class="mt-2 text-3xl font-bold text-slate-900">{{ dados.sobraEstimada }}</p>
+        </article>
+      </div>
 
-    }
-      @if (!relatorio()) {
-      <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <p class="text-sm font-medium text-slate-500">Taxa de consumo</p>
-            <p class="mt-1 text-2xl font-bold text-slate-900">{{ dados.taxaConsumoPlanejado }}%</p>
+        <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <p class="text-sm font-medium text-slate-500">Taxa de consumo</p>
+              <p class="mt-1 text-2xl font-bold text-slate-900">{{ dados.taxaConsumoPlanejado }}%</p>
+            </div>
+            <p class="text-sm font-semibold text-slate-500">{{ dados.tentativasBloqueadas }} bloqueios</p>
           </div>
-          <p class="text-sm font-semibold text-slate-500">{{ dados.tentativasBloqueadas }} bloqueios</p>
-        </div>
-        <div class="mt-4 h-3 overflow-hidden rounded-full bg-slate-100">
-          <div class="h-full rounded-full bg-emerald-600" [style.width.%]="dados.taxaConsumoPlanejado > 100 ? 100 : dados.taxaConsumoPlanejado"></div>
-        </div>
-      </article>
+          <div class="mt-4 h-3 overflow-hidden rounded-full bg-slate-100">
+            <div class="h-full rounded-full bg-emerald-600" [style.width.%]="dados.taxaConsumoPlanejado > 100 ? 100 : dados.taxaConsumoPlanejado"></div>
+          </div>
+        </article>
 
-      }
-  } @else if (carregandoConsolidacao()) {
-    <p class="text-sm text-slate-500">Carregando consolidação...</p>
+    } @else if (carregandoConsolidacao()) {
+      <p class="text-sm text-slate-500">Carregando consolidação...</p>
+    }
   }
 
-      <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <p class="text-sm font-medium text-slate-500">Relatorio IA</p>
-            <p class="mt-1 text-lg font-bold text-slate-900">
-              {{ relatorio()?.status || 'Nao gerado' }}
-            </p>
-          </div>
-          @if (relatorio(); as relatorioAtual) {
-            <p class="rounded-md bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-              {{ relatorioAtual.provedor || 'fake' }} / {{ relatorioAtual.modelo || 'regras-locais-v1' }}
-            </p>
-          }
+  @if (aba() === 'analise') {
+    <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <p class="text-sm font-medium text-slate-500">Relatorio IA</p>
+          <p class="mt-1 text-lg font-bold text-slate-900">
+            {{ relatorio()?.status || 'Nao gerado' }}
+          </p>
         </div>
-
-        @if (gerandoRelatorio()) {
-          <p class="mt-4 text-sm text-slate-600">Consultando status do relatorio...</p>
-        }
-
         @if (relatorio(); as relatorioAtual) {
-          <dl class="mt-4 grid gap-2 rounded-md bg-slate-50 p-3 text-xs text-slate-600 sm:grid-cols-2">
-            <div>
-              <dt class="font-semibold text-slate-500">ID</dt>
-              <dd class="mt-1 break-all font-mono">{{ relatorioAtual.id }}</dd>
-            </div>
-            <div>
-              <dt class="font-semibold text-slate-500">Tentativas</dt>
-              <dd class="mt-1">{{ relatorioAtual.tentativas }}</dd>
-            </div>
-            @if (relatorioAtual.concluidoEm) {
-              <div class="sm:col-span-2">
-                <dt class="font-semibold text-slate-500">Concluido em</dt>
-                <dd class="mt-1">{{ relatorioAtual.concluidoEm }}</dd>
-              </div>
-            }
-          </dl>
-        }
-
-        @if (relatorio()?.status === 'FALHOU') {
-          <p class="mt-4 rounded-md bg-red-50 p-3 text-sm font-medium text-red-800">
-            {{ relatorio()?.erro }}
+          <p class="rounded-md bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+            {{ relatorioAtual.provedor || 'fake' }} / {{ relatorioAtual.modelo || 'regras-locais-v1' }}
           </p>
         }
+      </div>
 
-        @if (relatorio()?.resultado; as analise) {
-          <div class="mt-5 space-y-4">
-            <p class="text-slate-700">{{ analise.resumoExecutivo }}</p>
+      @if (gerandoRelatorio()) {
+        <p class="mt-4 text-sm text-slate-600">Consultando status do relatorio...</p>
+      }
 
-            <div class="grid gap-3 sm:grid-cols-2">
-              <div class="rounded-md bg-emerald-50 p-3">
-                <p class="text-xs font-semibold uppercase tracking-wider text-emerald-700">Aceitacao</p>
-                <p class="mt-1 text-xl font-bold text-emerald-900">{{ analise.nivelAceitacao === 'NAO_AVALIAVEL' ? 'Não avaliável' : analise.nivelAceitacao }}</p>
-              </div>
-              <div class="rounded-md bg-amber-50 p-3">
-                <p class="text-xs font-semibold uppercase tracking-wider text-amber-700">Risco desperdicio</p>
-                <p class="mt-1 text-xl font-bold text-amber-900">{{ analise.riscoDesperdicio === 'NAO_AVALIAVEL' ? 'Não avaliável' : analise.riscoDesperdicio }}</p>
-              </div>
-            </div>
-
-            <div>
-              <p class="text-sm font-bold text-slate-900">Evidencias</p>
-              <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
-                @for (item of analise.evidencias; track item) {
-                  <li>{{ item }}</li>
-                }
-              </ul>
-            </div>
-
-            <div>
-              <p class="text-sm font-bold text-slate-900">Recomendacoes</p>
-              <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
-                @for (item of analise.recomendacoes; track item) {
-                  <li>{{ item }}</li>
-                }
-              </ul>
-            </div>
-
-            <p class="rounded-md bg-slate-50 p-3 text-xs font-medium text-slate-500">
-              {{ analise.observacaoLimitacoes }}
-            </p>
+      @if (relatorio(); as relatorioAtual) {
+        <dl class="mt-4 grid gap-2 rounded-md bg-slate-50 p-3 text-xs text-slate-600 sm:grid-cols-2">
+          <div>
+            <dt class="font-semibold text-slate-500">ID</dt>
+            <dd class="mt-1 break-all font-mono">{{ relatorioAtual.id }}</dd>
           </div>
-        }
-      </article>
+          <div>
+            <dt class="font-semibold text-slate-500">Tentativas</dt>
+            <dd class="mt-1">{{ relatorioAtual.tentativas }}</dd>
+          </div>
+          @if (relatorioAtual.concluidoEm) {
+            <div class="sm:col-span-2">
+              <dt class="font-semibold text-slate-500">Concluido em</dt>
+              <dd class="mt-1">{{ relatorioAtual.concluidoEm }}</dd>
+            </div>
+          }
+        </dl>
+      }
+
+      @if (relatorio()?.status === 'FALHOU') {
+        <p class="mt-4 rounded-md bg-red-50 p-3 text-sm font-medium text-red-800">
+          {{ relatorio()?.erro }}
+        </p>
+      }
+
+      @if (relatorio()?.resultado; as analise) {
+        <div class="mt-5 space-y-4">
+          <p class="text-slate-700">{{ analise.resumoExecutivo }}</p>
+
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div class="rounded-md bg-emerald-50 p-3">
+              <p class="text-xs font-semibold uppercase tracking-wider text-emerald-700">Aceitacao</p>
+              <p class="mt-1 text-xl font-bold text-emerald-900">{{ analise.nivelAceitacao === 'NAO_AVALIAVEL' ? 'Não avaliável' : analise.nivelAceitacao }}</p>
+            </div>
+            <div class="rounded-md bg-amber-50 p-3">
+              <p class="text-xs font-semibold uppercase tracking-wider text-amber-700">Risco desperdicio</p>
+              <p class="mt-1 text-xl font-bold text-amber-900">{{ analise.riscoDesperdicio === 'NAO_AVALIAVEL' ? 'Não avaliável' : analise.riscoDesperdicio }}</p>
+            </div>
+          </div>
+
+          <div>
+            <p class="text-sm font-bold text-slate-900">Evidencias</p>
+            <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+              @for (item of analise.evidencias; track item) {
+                <li>{{ item }}</li>
+              }
+            </ul>
+          </div>
+
+          <div>
+            <p class="text-sm font-bold text-slate-900">Recomendacoes</p>
+            <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+              @for (item of analise.recomendacoes; track item) {
+                <li>{{ item }}</li>
+              }
+            </ul>
+          </div>
+
+          <p class="rounded-md bg-slate-50 p-3 text-xs font-medium text-slate-500">
+            {{ analise.observacaoLimitacoes }}
+          </p>
+        </div>
+      }
+    </article>
+  }
 </section>

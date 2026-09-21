@@ -53,12 +53,24 @@ O dashboard consulta indicadores determinísticos sem gerar relatório IA. A fea
 - Ranking Chart.js de execução registrada por item, com tabela acessível de amostras, escolas e origens.
 - Contagens por turma; adesão e rejeição não são inferidas sem dados de presença.
 - Estados explícitos de dados insuficientes para ingredientes e ciclo de cardápio.
-- Histórico dos últimos 20 relatórios por data/turno. Abrir um relatório exibe a fotografia
-  persistida com ele, sem nova chamada ao Gemini. Relatórios antigos podem não ter fotografia.
+- Histórico dos últimos 20 relatórios por data/turno. Abrir um relatório exibe a análise
+  persistida, sem nova chamada ao Gemini. O snapshot permanece salvo no backend para rastreabilidade.
 
 `IndicadoresLogisticosComponent` recebe os dados por input e não depende do roteamento.
 Chart.js é carregado no chunk da rota dashboard. O gráfico não usa números produzidos pelo LLM.
 Ao mudar filtros, as consultas anteriores são canceladas para não misturar dados de turnos.
+
+O dashboard separa duas abas com os mesmos filtros de data e turno:
+
+- **Indicadores:** consulta consolidação e cálculos do Python, incluindo meta, ranking e
+  atendimentos. Atualizar ou navegar pelos filtros não gera relatório nem chama o LLM.
+- **Análise IA:** carrega o histórico e permite gerar uma nova análise apenas pelo botão
+  "Gerar análise IA". Abrir um relatório salvo consulta o banco. Gráficos, metas, rankings e
+  tabelas são exibidos exclusivamente na aba Indicadores.
+
+Alternar entre abas preserva o relatório selecionado e seu acompanhamento. Trocar data ou
+turno limpa a seleção e cancela as consultas anteriores; isso não cancela um job já criado
+no backend. Relatórios antigos podem ser abertos mesmo sem cardápio ativo no filtro.
 
 Após atualizar: execute `pnpm install` e reinicie Java, Python e Angular. A API precisa expor
 `GET /api/v1/gestao/indicadores` e `GET /api/v1/relatorios-ia?data&turno`.

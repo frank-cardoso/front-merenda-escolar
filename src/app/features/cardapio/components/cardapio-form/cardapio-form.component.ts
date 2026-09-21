@@ -9,7 +9,7 @@ import {
   untracked,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Cardapio, CardapioRequest, ItemCardapio, Turno } from '../../models/cardapio.models';
+import { Cardapio, CardapioRequest, ItemCardapio, Receita, Turno } from '../../models/cardapio.models';
 
 @Component({
   selector: 'app-cardapio-form',
@@ -20,6 +20,7 @@ import { Cardapio, CardapioRequest, ItemCardapio, Turno } from '../../models/car
 export class CardapioFormComponent {
   readonly cardapio = input<Cardapio | null>(null);
   readonly salvando = input(false);
+  readonly receitas = input<Receita[]>([]);
 
   readonly salvar = output<CardapioRequest>();
   readonly cancelar = output<void>();
@@ -31,7 +32,7 @@ export class CardapioFormComponent {
   readonly nomeRefeicao = signal('');
   readonly descricao = signal('');
   readonly quantidadePlanejada = signal(0);
-  readonly itens = signal<ItemCardapio[]>([{ nome: '', quantidade: '' }]);
+  readonly itens = signal<ItemCardapio[]>([this.itemVazio()]);
 
   readonly editando = computed(() => this.cardapio() !== null);
   readonly formularioValido = computed(() =>
@@ -48,16 +49,25 @@ export class CardapioFormComponent {
   }
 
   adicionarItem(): void {
-    this.itens.update((itens) => [...itens, { nome: '', quantidade: '' }]);
+    this.itens.update((itens) => [...itens, this.itemVazio()]);
   }
 
   removerItem(indice: number): void {
     this.itens.update((itens) => itens.filter((_, posicao) => posicao !== indice));
   }
 
-  atualizarItem(indice: number, campo: 'nome' | 'quantidade', valor: string): void {
+  atualizarQuantidade(indice: number, valor: string): void {
     this.itens.update((itens) => itens.map((item, posicao) =>
-      posicao === indice ? { ...item, [campo]: valor } : item));
+      posicao === indice ? { ...item, quantidade: valor } : item));
+  }
+
+  /** Guarda id e nome juntos: o id vai para a API, o nome fica para exibir na listagem. */
+  selecionarReceita(indice: number, receitaId: string): void {
+    const receita = this.receitas().find((candidata) => candidata.id === receitaId);
+    this.itens.update((itens) => itens.map((item, posicao) =>
+      posicao === indice
+        ? { ...item, receitaId: receita?.id ?? null, nome: receita?.nome ?? '' }
+        : item));
   }
 
   enviar(): void {
@@ -75,11 +85,16 @@ export class CardapioFormComponent {
 
   private itensPreenchidos(): ItemCardapio[] {
     return this.itens()
-      .filter((item) => item.nome.trim().length > 0)
+      .filter((item) => item.receitaId !== null)
       .map((item) => ({
-        nome: item.nome.trim(),
+        receitaId: item.receitaId,
+        nome: item.nome,
         quantidade: item.quantidade?.trim() || null,
       }));
+  }
+
+  private itemVazio(): ItemCardapio {
+    return { receitaId: null, nome: '', quantidade: '' };
   }
 
   private preencher(cardapio: Cardapio | null): void {
@@ -89,8 +104,12 @@ export class CardapioFormComponent {
     this.descricao.set(cardapio?.descricao ?? '');
     this.quantidadePlanejada.set(cardapio?.quantidadePlanejada ?? 0);
     this.itens.set(cardapio?.itens?.length
-      ? cardapio.itens.map((item) => ({ ...item, quantidade: item.quantidade ?? '' }))
-      : [{ nome: '', quantidade: '' }]);
+      ? cardapio.itens.map((item) => ({
+          ...item,
+          receitaId: item.receitaId ?? null,
+          quantidade: item.quantidade ?? '',
+        }))
+      : [this.itemVazio()]);
   }
 
   private hoje(): string {

@@ -1,6 +1,14 @@
 export type Turno = 'MANHA' | 'TARDE' | 'NOITE' | 'INTEGRAL';
 
+export interface Receita {
+  id: string;
+  nome: string;
+  codigoExterno: string | null;
+}
+
+/** `receitaId` e a identidade do item; `nome` e rotulo devolvido pela API. */
 export interface ItemCardapio {
+  receitaId: string | null;
   nome: string;
   quantidade: string | null;
 }

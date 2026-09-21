@@ -3,7 +3,8 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { finalize } from 'rxjs';
 import { CardapioFormComponent } from '../../components/cardapio-form/cardapio-form.component';
 import { CardapioApiService } from '../../data-access/cardapio-api.service';
-import { Cardapio, CardapioRequest } from '../../models/cardapio.models';
+import { ReceitaApiService } from '../../data-access/receita-api.service';
+import { Cardapio, CardapioRequest, Receita } from '../../models/cardapio.models';
 
 @Component({
   selector: 'app-cardapio-page',
@@ -13,8 +14,10 @@ import { Cardapio, CardapioRequest } from '../../models/cardapio.models';
 })
 export class CardapioPageComponent implements OnInit {
   private readonly cardapioApi = inject(CardapioApiService);
+  private readonly receitaApi = inject(ReceitaApiService);
 
   readonly cardapios = signal<Cardapio[]>([]);
+  readonly receitas = signal<Receita[]>([]);
   readonly carregando = signal(false);
   readonly salvando = signal(false);
   readonly formularioAberto = signal(false);
@@ -24,6 +27,19 @@ export class CardapioPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.carregar();
+    this.carregarReceitas();
+  }
+
+  /**
+   * O catalogo e carregado uma vez por abertura da tela. Sem ele o formulario nao tem o que
+   * oferecer, e a API recusa item que nao esteja no catalogo.
+   */
+  private carregarReceitas(): void {
+    this.receitaApi.listar().subscribe({
+      next: (receitas) => this.receitas.set(receitas),
+      error: () => this.aviso.set('Catálogo de receitas indisponível: não é possível cadastrar '
+        + 'cardápio até ele carregar.'),
+    });
   }
 
   carregar(): void {

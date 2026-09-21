@@ -20,6 +20,15 @@ export class FilaPageComponent {
   readonly erro = signal<string | null>(null);
   readonly ultimoCodigoLido = signal<string | null>(null);
 
+  /**
+   * Leituras autorizadas desde que a tela abriu.
+   *
+   * E contagem da sessao, nao o total do dia: a tela nao carrega o acumulado, e rotular de "hoje"
+   * afirmaria um numero que ela nao tem. Serve para tornar visivel que cada bip alimenta o
+   * indicador do painel, em vez de exigir que alguem afirme isso.
+   */
+  readonly autorizadasNaSessao = signal(0);
+
   validarQr(conteudoQr: string): void {
     if (this.processando()) return;
     const qrCode = parseAlunoQrCode(conteudoQr);
@@ -35,7 +44,12 @@ export class FilaPageComponent {
     this.filaApi.validarConsumo({ alunoCodigo: qrCode.alunoCodigo, metodoIdentificacao: 'QR_CODE' })
       .pipe(finalize(() => this.processando.set(false)))
       .subscribe({
-        next: (resultado) => this.resultado.set(resultado),
+        next: (resultado) => {
+          this.resultado.set(resultado);
+          if (resultado.resultado === 'AUTORIZADO') {
+            this.autorizadasNaSessao.update((total) => total + 1);
+          }
+        },
         error: (erro: HttpErrorResponse) => this.erro.set(this.montarMensagemErro(erro)),
       });
   }

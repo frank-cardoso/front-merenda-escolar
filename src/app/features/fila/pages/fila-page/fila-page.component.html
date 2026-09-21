@@ -8,6 +8,13 @@
     <p class="text-sm font-semibold uppercase tracking-wider text-emerald-700">Operacao na fila</p>
     <h2 class="mt-2 text-3xl font-bold">Leia o QR Code do aluno</h2>
     <p class="mt-2 text-slate-600">A validacao e feita sem IA e registra somente um consumo por turno.</p>
+
+    @if (autorizadasNaSessao() > 0) {
+      <p class="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-900">
+        {{ autorizadasNaSessao() }} leitura(s) autorizada(s) nesta sessão
+        <span class="font-normal text-emerald-700">— já contam nos indicadores do painel</span>
+      </p>
+    }
     <div class="mt-6">
       <app-qr-scanner [leituraPausada]="processando()" (codigoLido)="validarQr($event)" />
     </div>

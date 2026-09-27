@@ -6,6 +6,7 @@ import { IndicadoresLogisticos } from '../models/indicadores.models';
 import { RelatorioResumo } from '../models/dashboard.models';
 import {
   ConsolidacaoConsumo,
+  CardapioAnalise,
   CriarRelatorioIARequest,
   CriarRelatorioIAResponse,
   RelatorioIA,
@@ -30,9 +31,16 @@ export class DashboardApiService {
     return this.http.get<RelatorioIA>(`${this.baseUrl}/relatorios-ia/${id}`);
   }
 
-  buscarIndicadores(data: string, turno: Turno): Observable<IndicadoresLogisticos> {
-    const params = new HttpParams().set('data', data).set('turno', turno);
+  buscarIndicadores(data: string, turno: Turno, receitaIds: string[] = [], datas: string[] = []): Observable<IndicadoresLogisticos> {
+    let params = new HttpParams().set('data', data).set('turno', turno);
+    if (receitaIds.length) params = params.set('receitaIds', receitaIds.join(','));
+    if (datas.length) params = params.set('datas', datas.join(','));
     return this.http.get<IndicadoresLogisticos>(`${this.baseUrl}/gestao/indicadores`, { params });
+  }
+
+  buscarCardapiosAnalise(inicio: string, fim: string, turno: Turno): Observable<CardapioAnalise[]> {
+    const params = new HttpParams().set('inicio', inicio).set('fim', fim).set('turno', turno);
+    return this.http.get<CardapioAnalise[]>(`${this.baseUrl}/gestao/cardapios-analise`, { params });
   }
 
   listarRelatorios(data: string, turno: Turno): Observable<RelatorioResumo[]> {

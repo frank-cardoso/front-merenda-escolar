@@ -26,7 +26,7 @@ function montar(itens: { receitaId: string | null; nome: string }[], consumos = 
   const dashboardApi = jasmine.createSpyObj<DashboardApiService>('DashboardApiService',
     ['buscarConsolidacao', 'criarRelatorio']);
   const fechamentoApi = jasmine.createSpyObj<FechamentoApiService>('FechamentoApiService',
-    ['registrarMedicao']);
+    ['registrarMedicao', 'listarMedicoes']);
 
   cardapioApi.listar.and.returnValue(of(cardapio(itens)));
   dashboardApi.buscarConsolidacao.and.returnValue(of({
@@ -37,6 +37,7 @@ function montar(itens: { receitaId: string | null; nome: string }[], consumos = 
   dashboardApi.criarRelatorio.and.returnValue(
     of({ relatorioId: 'r1', status: 'PENDENTE', statusUrl: '/r1' } as CriarRelatorioIAResponse));
   fechamentoApi.registrarMedicao.and.returnValue(of({}));
+  fechamentoApi.listarMedicoes.and.returnValue(of([]));
 
   TestBed.configureTestingModule({
     providers: [

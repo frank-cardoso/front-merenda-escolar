@@ -24,3 +24,17 @@ export interface MedicaoSobraRequest {
   sobraNaoDistribuida: number;
   restoNoPrato: number;
 }
+
+export interface MedicaoSobraResponse {
+  data: string;
+  turno: Turno;
+  receitaId: string;
+  porcoesPreparadas: number;
+  porcoesServidas: number;
+  sobraNaoDistribuida: number;
+  restoNoPrato: number;
+}
+
+export interface FechamentoSobraRequest {
+  medicoes: MedicaoSobraRequest[];
+}

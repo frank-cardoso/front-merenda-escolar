@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { concat, finalize, switchMap, toArray } from 'rxjs';
+import { finalize, switchMap } from 'rxjs';
 import { CardapioApiService } from '../../../cardapio/data-access/cardapio-api.service';
 import { Turno } from '../../../cardapio/models/cardapio.models';
 import { DashboardApiService } from '../../../dashboard/data-access/dashboard-api.service';
@@ -36,6 +36,7 @@ export default class FechamentoPageComponent implements OnInit {
   readonly linhas = signal<LinhaFechamento[]>([]);
   readonly consumos = signal(0);
   readonly nomeCardapio = signal('');
+  readonly medicoesExistentes = signal(0);
   readonly carregando = signal(false);
   readonly fechando = signal(false);
   readonly erro = signal<string | null>(null);
@@ -55,6 +56,7 @@ export default class FechamentoPageComponent implements OnInit {
     this.aviso.set(null);
     this.relatorioId.set(null);
     this.linhas.set([]);
+    this.medicoesExistentes.set(0);
 
     const data = this.data();
     const turno = this.turno();
@@ -96,6 +98,23 @@ export default class FechamentoPageComponent implements OnInit {
           sobraNaoDistribuida: 0,
           restoNoPrato: 0,
         })));
+        this.fechamentoApi.listarMedicoes(this.data(), this.turno()).subscribe({
+          next: (medicoes) => {
+            this.medicoesExistentes.set(medicoes.length);
+            if (!medicoes.length) return;
+            const porReceita = new Map(medicoes.map((medicao) => [medicao.receitaId, medicao]));
+            this.linhas.update((linhas) => linhas.map((linha) => {
+              const medicao = porReceita.get(linha.receitaId);
+              return medicao ? {
+                ...linha,
+                porcoesPreparadas: medicao.porcoesPreparadas,
+                sobraNaoDistribuida: medicao.sobraNaoDistribuida,
+                restoNoPrato: medicao.restoNoPrato,
+              } : linha;
+            }));
+          },
+          error: (erro: HttpErrorResponse) => this.erro.set(this.mensagem(erro)),
+        });
       },
       error: (erro: HttpErrorResponse) => this.erro.set(this.mensagem(erro)),
     });
@@ -138,9 +157,7 @@ export default class FechamentoPageComponent implements OnInit {
 
     const data = this.data();
     const turno = this.turno();
-    // Em sequencia de proposito: se uma medicao falhar, o relatorio nao chega a ser gerado.
-    const medicoes = this.linhas().map((linha) =>
-      this.fechamentoApi.registrarMedicao({
+    const medicoes = this.linhas().map((linha) => ({
         data, turno,
         receitaId: linha.receitaId,
         porcoesPreparadas: linha.porcoesPreparadas,
@@ -149,8 +166,7 @@ export default class FechamentoPageComponent implements OnInit {
         restoNoPrato: linha.restoNoPrato,
       }));
 
-    concat(...medicoes).pipe(
-      toArray(),
+    this.fechamentoApi.registrarFechamento({ medicoes }).pipe(
       switchMap(() => this.dashboardApi.criarRelatorio({ dataReferencia: data, turno })),
       finalize(() => this.fechando.set(false)),
     ).subscribe({

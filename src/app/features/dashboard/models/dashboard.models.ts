@@ -8,6 +8,8 @@ export interface ConsolidacaoConsumo {
   turno: Turno;
   cardapioId: string;
   cardapio: string;
+  itensCardapio?: string[];
+  receitasCardapio?: string[];
   quantidadePlanejada: number;
   consumosAutorizados: number;
   tentativasBloqueadas: number;
@@ -18,6 +20,20 @@ export interface ConsolidacaoConsumo {
 export interface CriarRelatorioIARequest {
   dataReferencia: string;
   turno: Turno;
+  receitaIds?: string[];
+  datasSelecionadas?: string[];
+}
+
+export interface CardapioAnalise {
+  chave: string;
+  nome: string;
+  itens: string[];
+  receitaIds: string[];
+  datasServido: string[];
+  datasComFechamento: string[];
+  ocorrencias: number;
+  analisavel: boolean;
+  motivo: string | null;
 }
 
 export interface CriarRelatorioIAResponse {

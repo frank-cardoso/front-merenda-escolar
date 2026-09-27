@@ -95,7 +95,8 @@ describe('DashboardPageComponent', () => {
     api.buscarIndicadores.and.returnValue(of({
       schemaVersion: '2', calculoVersao: 'indicadores-v1', status: 'INDISPONIVEL',
       dataReferencia: '2026-09-17', inicioHistorico: '2026-08-19', turno: 'MANHA',
-      execucaoPlanejamento: null, atendimentos: null, topComidas: [], porTurma: [],
+      execucaoPlanejamento: null, atendimentos: null, topComidas: [], aceitacaoItens: [],
+      aceitacaoItensSemana: [], porTurma: [],
       ingredientes: null, rotacaoCardapio: null, avisos: [],
     }));
     api.listarRelatorios.and.returnValue(of([]));

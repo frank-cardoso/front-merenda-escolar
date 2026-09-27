@@ -75,6 +75,21 @@ no backend. Relatórios antigos podem ser abertos mesmo sem cardápio ativo no f
 Após atualizar: execute `pnpm install` e reinicie Java, Python e Angular. A API precisa expor
 `GET /api/v1/gestao/indicadores` e `GET /api/v1/relatorios-ia?data&turno`.
 
+### Escopo visual dos indicadores
+
+O dashboard separa explicitamente as responsabilidades:
+
+- **Resumo operacional do dia:** cardápio, refeições planejadas, autorizações registradas,
+  diferença do planejamento, bloqueios e execução registrada do dia/turno.
+- **Aceitação alimentar — histórico de fechamentos:** aceitação dos itens em visão semanal ou
+  mensal, desperdício medido e análise histórica de ingredientes.
+- **Autorizações por turma:** detalhamento dos registros da fila no dia; não comprova que a
+  refeição foi consumida.
+
+Na análise IA, a pessoa escolhe primeiro um cardápio servido. Os itens e as datas de fechamento
+exibidos na tela pertencem ao cardápio selecionado, e não à amostra geral do período. Cardápios
+com menos de 20 dias completos ficam bloqueados para geração.
+
 ### Desenvolvimento local
 
 Pre-requisitos: Node.js LTS e pnpm.

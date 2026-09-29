@@ -148,3 +148,11 @@ Essa decisao mantem cada area funcional autocontida. A fila, por exemplo, concen
 - Tailwind CSS: composicao visual.
 
 O reconhecimento facial sera carregado apenas na rota da fila, e os modelos ficarao em assets publicos versionados separadamente.
+
+## Pendências e próximos passos
+
+- Adicionar filtro de turma quando houver uma regra definida para presença e adesão.
+- Exibir, quando aplicável, um aviso claro de que dados sintéticos não representam uma operação real.
+- Definir como a interface deve sinalizar que um relatório antigo pode ficar desatualizado após a edição de um fechamento.
+- Revisar textos e rótulos do dashboard após a entrada de dados reais e feedback dos usuários.
+- Avaliar filtros de período também na análise IA, mantendo a seleção do cardápio como escopo principal.

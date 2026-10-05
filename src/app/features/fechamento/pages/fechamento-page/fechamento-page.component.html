@@ -1,0 +1,109 @@
+<section class="space-y-6">
+  <div>
+    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Operação</p>
+    <h2 class="text-2xl font-bold text-slate-900">Fechamento do turno</h2>
+    <p class="mt-1 text-sm text-slate-600">
+      Ao encerrar o atendimento, registre o que sobrou. Sem esse registro o sistema não tem como
+      medir aceitação nem desperdício — a catraca conta quem pegou a refeição, não quanto foi comido.
+    </p>
+    <p class="mt-2 text-sm text-slate-600">
+      São três números por item. <strong>Sobrou na panela</strong> nunca foi servido a ninguém e em
+      tese é reaproveitável — indica que se produziu demais. <strong>Voltou no prato</strong> foi
+      servido e o aluno não comeu — é o único dos dois que mede rejeição.
+      O servido é calculado: preparado menos o que sobrou na panela.
+    </p>
+  </div>
+
+  <div class="grid gap-3 sm:grid-cols-[180px_180px_auto] sm:items-end">
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Data</span>
+      <input type="date" name="data" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+             [ngModel]="data()" (ngModelChange)="data.set($event)" />
+    </label>
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Turno</span>
+      <select name="turno" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              [ngModel]="turno()" (ngModelChange)="turno.set($event)">
+        @for (opcao of turnos; track opcao) {
+          <option [ngValue]="opcao">{{ opcao }}</option>
+        }
+      </select>
+    </label>
+    <button type="button" (click)="carregar()" [disabled]="carregando()"
+            class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">
+      {{ carregando() ? 'Carregando...' : 'Carregar turno' }}
+    </button>
+  </div>
+
+  @if (erro()) {
+    <p class="rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">{{ erro() }}</p>
+  }
+  @if (aviso()) {
+    <p class="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">{{ aviso() }}</p>
+  }
+
+  @if (linhas().length > 0) {
+    <div class="rounded-lg border border-slate-200 bg-white p-5">
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        <p class="text-sm font-semibold text-slate-900">{{ nomeCardapio() }}</p>
+        <p class="text-sm text-slate-600">{{ consumos() }} consumos registrados na fila</p>
+      </div>
+      @if (medicoesExistentes() > 0) {
+        <div class="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900" role="status">
+          <p class="font-semibold">Fechamento já realizado para esta data e turno.</p>
+          <p class="mt-1">{{ medicoesExistentes() }} de {{ linhas().length }} item(ns) já possuem medição. Os valores foram carregados e podem ser editados.</p>
+          <p class="mt-1">A edição pode alterar indicadores e relatórios de IA já gerados para este período. Ao salvar, um novo relatório será solicitado.</p>
+        </div>
+      }
+
+      <div class="mt-4 space-y-2">
+        <div class="hidden gap-2 px-1 text-xs font-semibold uppercase tracking-wider text-slate-500 sm:grid sm:grid-cols-[1fr_110px_140px_140px_110px]">
+          <span>Item</span><span>Preparado</span><span>Sobrou na panela</span>
+          <span>Voltou no prato</span><span>Servido</span>
+        </div>
+
+        @for (linha of linhas(); track linha.receitaId) {
+          <div class="grid gap-2 sm:grid-cols-[1fr_110px_140px_140px_110px] sm:items-center">
+            <span class="text-sm text-slate-800">{{ linha.nome }}</span>
+            <input type="number" min="0" [name]="'prep-' + $index"
+                   class="rounded-md border border-slate-300 px-3 py-2 text-sm"
+                   [ngModel]="linha.porcoesPreparadas"
+                   (ngModelChange)="atualizar($index, 'porcoesPreparadas', $event)" />
+            <input type="number" min="0" [name]="'panela-' + $index"
+                   class="rounded-md border border-slate-300 px-3 py-2 text-sm"
+                   [ngModel]="linha.sobraNaoDistribuida"
+                   (ngModelChange)="atualizar($index, 'sobraNaoDistribuida', $event)" />
+            <input type="number" min="0" [name]="'prato-' + $index"
+                   class="rounded-md border border-slate-300 px-3 py-2 text-sm"
+                   [ngModel]="linha.restoNoPrato"
+                   (ngModelChange)="atualizar($index, 'restoNoPrato', $event)" />
+            <span class="px-3 py-2 text-sm font-semibold text-slate-700">{{ servidas(linha) }}</span>
+          </div>
+          @if (!linhaConsistente(linha)) {
+            <p class="px-1 text-xs text-red-700">
+              Não pode sobrar mais do que foi preparado, nem voltar no prato mais do que foi servido.
+            </p>
+          }
+        }
+      </div>
+
+      <div class="mt-5 flex flex-wrap justify-end gap-3">
+        <button type="button" (click)="naoSobrouNada()"
+                class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+          Não sobrou nada
+        </button>
+        <button type="button" (click)="fechar()" [disabled]="!podeFechar() || fechando()"
+                class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
+          {{ fechando() ? 'Salvando...' : medicoesExistentes() > 0 ? 'Salvar edição e gerar relatório' : 'Fechar turno e gerar relatório' }}
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (relatorioId()) {
+    <p class="rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+      Turno fechado e relatório solicitado. Acompanhe no Dashboard — aceitação e desperdício
+      passam a ser calculados a partir do que foi registrado aqui.
+    </p>
+  }
+</section>

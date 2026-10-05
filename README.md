@@ -45,6 +45,53 @@ A rota `/dashboard` consulta `GET /api/v1/gestao/consolidacoes` para exibir os i
 
 ## Execucao
 
+### Dashboard de inteligência logística
+
+O dashboard consulta indicadores determinísticos sem gerar relatório IA. A feature agora inclui:
+
+- Meta interna de execução (padrão 80%), alunos únicos e repetições do dia/turno.
+- Ranking Chart.js de execução registrada por item, com tabela acessível de amostras, escolas e origens.
+- Contagens por turma; adesão e rejeição não são inferidas sem dados de presença.
+- Estados explícitos de dados insuficientes para ingredientes e ciclo de cardápio.
+- Histórico dos últimos 20 relatórios por data/turno. Abrir um relatório exibe a análise
+  persistida, sem nova chamada ao Gemini. O snapshot permanece salvo no backend para rastreabilidade.
+
+`IndicadoresLogisticosComponent` recebe os dados por input e não depende do roteamento.
+Chart.js é carregado no chunk da rota dashboard. O gráfico não usa números produzidos pelo LLM.
+Ao mudar filtros, as consultas anteriores são canceladas para não misturar dados de turnos.
+
+O dashboard separa duas abas com os mesmos filtros de data e turno:
+
+- **Indicadores:** consulta consolidação e cálculos do Python, incluindo meta, ranking e
+  atendimentos. Atualizar ou navegar pelos filtros não gera relatório nem chama o LLM.
+- **Análise IA:** carrega o histórico e permite gerar uma nova análise apenas pelo botão
+  "Gerar análise IA". Abrir um relatório salvo consulta o banco. Gráficos, metas, rankings e
+  tabelas são exibidos exclusivamente na aba Indicadores.
+
+Alternar entre abas preserva o relatório selecionado e seu acompanhamento. Trocar data ou
+turno limpa a seleção e cancela as consultas anteriores; isso não cancela um job já criado
+no backend. Relatórios antigos podem ser abertos mesmo sem cardápio ativo no filtro.
+
+Após atualizar: execute `pnpm install` e reinicie Java, Python e Angular. A API precisa expor
+`GET /api/v1/gestao/indicadores` e `GET /api/v1/relatorios-ia?data&turno`.
+
+### Escopo visual dos indicadores
+
+O dashboard separa explicitamente as responsabilidades:
+
+- **Resumo operacional do dia:** cardápio, refeições planejadas, autorizações registradas,
+  diferença do planejamento, bloqueios e execução registrada do dia/turno.
+- **Aceitação alimentar — histórico de fechamentos:** aceitação dos itens em visão semanal ou
+  mensal, desperdício medido e análise histórica de ingredientes.
+- **Autorizações por turma:** detalhamento dos registros da fila no dia; não comprova que a
+  refeição foi consumida.
+
+Na análise IA, a pessoa escolhe primeiro um cardápio servido. Os itens e as datas de fechamento
+exibidos na tela pertencem ao cardápio selecionado, e não à amostra geral do período. Cardápios
+com menos de 20 dias completos ficam bloqueados para geração.
+
+### Desenvolvimento local
+
 Pre-requisitos: Node.js LTS e pnpm.
 
 ```powershell
@@ -101,3 +148,11 @@ Essa decisao mantem cada area funcional autocontida. A fila, por exemplo, concen
 - Tailwind CSS: composicao visual.
 
 O reconhecimento facial sera carregado apenas na rota da fila, e os modelos ficarao em assets publicos versionados separadamente.
+
+## Pendências e próximos passos
+
+- Adicionar filtro de turma quando houver uma regra definida para presença e adesão.
+- Exibir, quando aplicável, um aviso claro de que dados sintéticos não representam uma operação real.
+- Definir como a interface deve sinalizar que um relatório antigo pode ficar desatualizado após a edição de um fechamento.
+- Revisar textos e rótulos do dashboard após a entrada de dados reais e feedback dos usuários.
+- Avaliar filtros de período também na análise IA, mantendo a seleção do cardápio como escopo principal.

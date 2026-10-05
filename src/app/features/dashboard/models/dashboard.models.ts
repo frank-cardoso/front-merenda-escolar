@@ -1,4 +1,6 @@
-export type Turno = 'MANHA' | 'TARDE' | 'NOITE';
+import { IndicadoresLogisticos } from './indicadores.models';
+
+export type Turno = 'MANHA' | 'TARDE' | 'NOITE' | 'INTEGRAL';
 export type StatusRelatorioIA = 'PENDENTE' | 'PROCESSANDO' | 'CONCLUIDO' | 'FALHOU';
 
 export interface ConsolidacaoConsumo {
@@ -6,6 +8,8 @@ export interface ConsolidacaoConsumo {
   turno: Turno;
   cardapioId: string;
   cardapio: string;
+  itensCardapio?: string[];
+  receitasCardapio?: string[];
   quantidadePlanejada: number;
   consumosAutorizados: number;
   tentativasBloqueadas: number;
@@ -16,6 +20,20 @@ export interface ConsolidacaoConsumo {
 export interface CriarRelatorioIARequest {
   dataReferencia: string;
   turno: Turno;
+  receitaIds?: string[];
+  datasSelecionadas?: string[];
+}
+
+export interface CardapioAnalise {
+  chave: string;
+  nome: string;
+  itens: string[];
+  receitaIds: string[];
+  datasServido: string[];
+  datasComFechamento: string[];
+  ocorrencias: number;
+  analisavel: boolean;
+  motivo: string | null;
 }
 
 export interface CriarRelatorioIAResponse {
@@ -34,6 +52,7 @@ export interface AnaliseLogistica {
 }
 
 export interface RelatorioIA {
+  indicadores: IndicadoresLogisticos | null;
   id: string;
   dataReferencia: string;
   turno: Turno;
@@ -47,4 +66,12 @@ export interface RelatorioIA {
   criadoEm: string;
   iniciadoEm: string | null;
   concluidoEm: string | null;
+}
+
+export interface RelatorioResumo {
+  id: string;
+  status: StatusRelatorioIA;
+  criadoEm: string;
+  provedor: string | null;
+  modelo: string | null;
 }

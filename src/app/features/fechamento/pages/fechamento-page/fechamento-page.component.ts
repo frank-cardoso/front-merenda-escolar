@@ -46,6 +46,10 @@ export default class FechamentoPageComponent implements OnInit {
   readonly podeFechar = computed(() =>
     this.linhas().length > 0 && this.linhas().every((linha) => this.linhaConsistente(linha)));
 
+  readonly totalPreparado = computed(() => this.somar('porcoesPreparadas'));
+  readonly totalPanela = computed(() => this.somar('sobraNaoDistribuida'));
+  readonly totalPrato = computed(() => this.somar('restoNoPrato'));
+
   ngOnInit(): void {
     this.carregar();
   }
@@ -173,6 +177,10 @@ export default class FechamentoPageComponent implements OnInit {
       next: (resposta) => this.relatorioId.set(resposta.relatorioId),
       error: (erro: HttpErrorResponse) => this.erro.set(this.mensagem(erro)),
     });
+  }
+
+  private somar(campo: 'porcoesPreparadas' | 'sobraNaoDistribuida' | 'restoNoPrato'): number {
+    return this.linhas().reduce((total, linha) => total + linha[campo], 0);
   }
 
   private mensagem(erro: HttpErrorResponse): string {

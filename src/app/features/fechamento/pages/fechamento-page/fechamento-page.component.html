@@ -1,99 +1,149 @@
 <section class="space-y-6">
-  <div>
-    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Operação</p>
-    <h2 class="text-2xl font-bold text-slate-900">Fechamento do turno</h2>
-    <p class="mt-1 text-sm text-slate-600">
-      Ao encerrar o atendimento, registre o que sobrou. Sem esse registro o sistema não tem como
-      medir aceitação nem desperdício — a catraca conta quem pegou a refeição, não quanto foi comido.
-    </p>
-    <p class="mt-2 text-sm text-slate-600">
-      São três números por item. <strong>Sobrou na panela</strong> nunca foi servido a ninguém e em
-      tese é reaproveitável — indica que se produziu demais. <strong>Voltou no prato</strong> foi
-      servido e o aluno não comeu — é o único dos dois que mede rejeição.
-      O servido é calculado: preparado menos o que sobrou na panela.
-    </p>
-  </div>
+  <header class="space-y-4">
+    <span class="inline-block rounded-full border border-brand-200/80 bg-brand-50 px-2.5 py-0.5 text-xs font-extrabold uppercase tracking-wider text-brand-600">Operação</span>
+    <div>
+      <h2 class="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">Fechamento do turno</h2>
+      <p class="mt-1 text-sm text-slate-500">Registre as sobras de produção e de prato para apuração de indicadores e controle de desperdício.</p>
+    </div>
+    <div class="flex items-start gap-3.5 rounded-xl border border-brand-200/90 bg-brand-50/60 p-4 sm:p-5">
+      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-500 text-zinc-950 shadow-xs" aria-hidden="true">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+        </svg>
+      </div>
+      <div class="space-y-1.5 text-xs leading-relaxed text-slate-700 sm:text-sm">
+        <p>
+          Ao encerrar o atendimento, registre o que sobrou. Sem esse registro o sistema não tem como
+          medir aceitação nem desperdício — a catraca conta quem pegou a refeição, não quanto foi comido.
+        </p>
+        <p class="text-slate-600">
+          São três números por item. <strong class="font-semibold text-slate-900">Sobrou na panela</strong> nunca foi servido a ninguém e em
+          tese é reaproveitável — indica que se produziu demais. <strong class="font-semibold text-slate-900">Voltou no prato</strong> foi
+          servido e o aluno não comeu — é o único dos dois que mede rejeição.
+          O <strong class="font-semibold text-slate-900">servido</strong> é calculado: <em>preparado menos o que sobrou na panela</em>.
+        </p>
+      </div>
+    </div>
+  </header>
 
-  <div class="grid gap-3 sm:grid-cols-[180px_180px_auto] sm:items-end">
-    <label class="block">
-      <span class="text-sm font-medium text-slate-700">Data</span>
-      <input type="date" name="data" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+  <div class="grid grid-cols-1 items-end gap-4 rounded-xl border border-slate-200 bg-surface-card p-4 shadow-xs sm:grid-cols-12">
+    <label class="block sm:col-span-4">
+      <span class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-600">Data</span>
+      <input type="date" name="data"
+             class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium shadow-xs focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
              [ngModel]="data()" (ngModelChange)="data.set($event)" />
     </label>
-    <label class="block">
-      <span class="text-sm font-medium text-slate-700">Turno</span>
-      <select name="turno" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+    <label class="block sm:col-span-4">
+      <span class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-600">Turno</span>
+      <select name="turno"
+              class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium shadow-xs focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
               [ngModel]="turno()" (ngModelChange)="turno.set($event)">
         @for (opcao of turnos; track opcao) {
           <option [ngValue]="opcao">{{ opcao }}</option>
         }
       </select>
     </label>
-    <button type="button" (click)="carregar()" [disabled]="carregando()"
-            class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">
-      {{ carregando() ? 'Carregando...' : 'Carregar turno' }}
-    </button>
+    <div class="sm:col-span-4">
+      <button type="button" (click)="carregar()" [disabled]="carregando()"
+              class="flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-zinc-800 disabled:opacity-60">
+        <svg class="h-4 w-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>
+        {{ carregando() ? 'Carregando...' : 'Carregar turno' }}
+      </button>
+    </div>
   </div>
 
   @if (erro()) {
-    <p class="rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">{{ erro() }}</p>
+    <p class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">{{ erro() }}</p>
   }
   @if (aviso()) {
-    <p class="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">{{ aviso() }}</p>
+    <p class="rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-900">{{ aviso() }}</p>
   }
 
   @if (linhas().length > 0) {
-    <div class="rounded-lg border border-slate-200 bg-white p-5">
-      <div class="flex flex-wrap items-baseline justify-between gap-2">
-        <p class="text-sm font-semibold text-slate-900">{{ nomeCardapio() }}</p>
-        <p class="text-sm text-slate-600">{{ consumos() }} consumos registrados na fila</p>
+    <div class="overflow-hidden rounded-xl border border-slate-200 bg-surface-card shadow-xs">
+      <div class="flex flex-col justify-between gap-3 border-b border-slate-200 bg-surface-main px-6 py-4 md:flex-row md:items-center">
+        <div>
+          <span class="mb-0.5 block text-xs font-bold uppercase tracking-wider text-slate-400">Cardápio do turno</span>
+          <p class="text-base font-bold tracking-tight text-slate-900">{{ nomeCardapio() }}</p>
+        </div>
+        <span class="inline-flex items-center gap-2 self-start rounded-full border border-brand-300 bg-brand-100 px-3 py-1.5 text-xs font-semibold text-brand-900 md:self-auto">
+          <span class="h-2 w-2 rounded-full bg-brand-500" aria-hidden="true"></span>
+          {{ consumos() }} consumos registrados na fila
+        </span>
       </div>
+
       @if (medicoesExistentes() > 0) {
-        <div class="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900" role="status">
+        <div class="border-b border-blue-200 bg-blue-50 px-6 py-3 text-sm text-blue-900" role="status">
           <p class="font-semibold">Fechamento já realizado para esta data e turno.</p>
           <p class="mt-1">{{ medicoesExistentes() }} de {{ linhas().length }} item(ns) já possuem medição. Os valores foram carregados e podem ser editados.</p>
           <p class="mt-1">A edição pode alterar indicadores e relatórios de IA já gerados para este período. Ao salvar, um novo relatório será solicitado.</p>
         </div>
       }
 
-      <div class="mt-4 space-y-2">
-        <div class="hidden gap-2 px-1 text-xs font-semibold uppercase tracking-wider text-slate-500 sm:grid sm:grid-cols-[1fr_110px_140px_140px_110px]">
-          <span>Item</span><span>Preparado</span><span>Sobrou na panela</span>
-          <span>Voltou no prato</span><span>Servido</span>
+      <div class="px-6 py-2">
+        <div class="hidden gap-2 border-b border-slate-200 py-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 sm:grid sm:grid-cols-[1fr_110px_140px_140px_90px]">
+          <span>Item</span>
+          <span class="text-center">Preparado</span>
+          <span class="text-center">Sobrou na panela</span>
+          <span class="text-center">Voltou no prato</span>
+          <span class="text-right">Servido</span>
         </div>
 
         @for (linha of linhas(); track linha.receitaId) {
-          <div class="grid gap-2 sm:grid-cols-[1fr_110px_140px_140px_110px] sm:items-center">
-            <span class="text-sm text-slate-800">{{ linha.nome }}</span>
-            <input type="number" min="0" [name]="'prep-' + $index"
-                   class="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          <div class="grid gap-2 border-b border-slate-100 py-4 transition-colors last:border-b-0 hover:bg-surface-main/60 sm:grid-cols-[1fr_110px_140px_140px_90px] sm:items-center">
+            <span class="text-sm font-semibold text-slate-900">{{ linha.nome }}</span>
+            <input type="number" min="0" [name]="'prep-' + $index" [attr.aria-label]="'Preparado: ' + linha.nome"
+                   class="mx-auto w-24 rounded-lg border border-slate-300 bg-surface-main px-3 py-2 text-center text-sm font-medium shadow-inner focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
                    [ngModel]="linha.porcoesPreparadas"
                    (ngModelChange)="atualizar($index, 'porcoesPreparadas', $event)" />
-            <input type="number" min="0" [name]="'panela-' + $index"
-                   class="rounded-md border border-slate-300 px-3 py-2 text-sm"
+            <input type="number" min="0" [name]="'panela-' + $index" [attr.aria-label]="'Sobrou na panela: ' + linha.nome"
+                   class="mx-auto w-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-center text-sm font-semibold text-slate-900 shadow-xs focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
                    [ngModel]="linha.sobraNaoDistribuida"
                    (ngModelChange)="atualizar($index, 'sobraNaoDistribuida', $event)" />
-            <input type="number" min="0" [name]="'prato-' + $index"
-                   class="rounded-md border border-slate-300 px-3 py-2 text-sm"
+            <input type="number" min="0" [name]="'prato-' + $index" [attr.aria-label]="'Voltou no prato: ' + linha.nome"
+                   class="mx-auto w-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-center text-sm font-semibold text-slate-900 shadow-xs focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
                    [ngModel]="linha.restoNoPrato"
                    (ngModelChange)="atualizar($index, 'restoNoPrato', $event)" />
-            <span class="px-3 py-2 text-sm font-semibold text-slate-700">{{ servidas(linha) }}</span>
+            <span class="text-sm font-black text-slate-900 sm:text-right sm:text-base">{{ servidas(linha) }}</span>
           </div>
           @if (!linhaConsistente(linha)) {
-            <p class="px-1 text-xs text-red-700">
+            <p class="pb-3 text-xs text-red-700">
               Não pode sobrar mais do que foi preparado, nem voltar no prato mais do que foi servido.
             </p>
           }
         }
       </div>
 
-      <div class="mt-5 flex flex-wrap justify-end gap-3">
+      <div class="grid grid-cols-1 gap-4 border-t border-slate-200 bg-brand-50/40 px-6 py-4 text-xs sm:grid-cols-3">
+        <div class="flex items-center gap-2">
+          <span class="h-2.5 w-2.5 rounded-full bg-slate-400" aria-hidden="true"></span>
+          <span class="font-medium text-slate-600">Total preparado:</span>
+          <strong class="font-bold text-slate-900">{{ totalPreparado() }} porções</strong>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="h-2.5 w-2.5 rounded-full bg-brand-500" aria-hidden="true"></span>
+          <span class="font-medium text-slate-600">Sobrou na panela:</span>
+          <strong class="font-bold text-slate-900">{{ totalPanela() }} porções</strong>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="h-2.5 w-2.5 rounded-full bg-rose-500" aria-hidden="true"></span>
+          <span class="font-medium text-slate-600">Voltou no prato:</span>
+          <strong class="font-bold text-slate-900">{{ totalPrato() }} porções</strong>
+        </div>
+      </div>
+
+      <div class="flex flex-col items-center justify-end gap-3 border-t border-slate-200 px-6 py-4 sm:flex-row">
         <button type="button" (click)="naoSobrouNada()"
-                class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                class="w-full rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-xs transition-all hover:bg-surface-main focus:outline-none focus:ring-2 focus:ring-slate-400 sm:w-auto">
           Não sobrou nada
         </button>
         <button type="button" (click)="fechar()" [disabled]="!podeFechar() || fechando()"
-                class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
+                class="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-500 px-6 py-2.5 text-sm font-bold tracking-tight text-zinc-950 shadow-md transition-all duration-150 hover:bg-brand-400 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          </svg>
           {{ fechando() ? 'Salvando...' : medicoesExistentes() > 0 ? 'Salvar edição e gerar relatório' : 'Fechar turno e gerar relatório' }}
         </button>
       </div>
@@ -101,7 +151,7 @@
   }
 
   @if (relatorioId()) {
-    <p class="rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+    <p class="rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-900">
       Turno fechado e relatório solicitado. Acompanhe no Dashboard — aceitação e desperdício
       passam a ser calculados a partir do que foi registrado aqui.
     </p>

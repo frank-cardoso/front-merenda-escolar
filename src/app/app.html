@@ -1,22 +1,33 @@
-<header class="border-b border-slate-200 bg-white">
-  <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-    <div>
-      <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Projeto Integrador</p>
-      <h1 class="text-xl font-bold text-slate-900">Merenda Escolar</h1>
+<div class="flex min-h-screen flex-col bg-surface-main text-slate-800">
+  <header class="sticky top-0 z-30 border-b border-zinc-800 bg-[#18181b] shadow-md">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex h-16 items-center justify-between gap-4">
+        <a routerLink="/fila"
+           class="inline-flex shrink-0 items-center space-x-2 rounded-xl bg-brand-500 px-3 py-1.5 font-black text-zinc-950 shadow-sm transition-colors hover:bg-brand-400">
+          <span class="flex h-6 w-6 items-center justify-center rounded-lg bg-zinc-950 text-sm font-black leading-none text-brand-400"
+                aria-hidden="true">B</span>
+          <h1 class="text-sm font-extrabold tracking-tight">Merenda Escolar</h1>
+        </a>
+        <nav class="flex items-center space-x-1 overflow-x-auto md:space-x-2" aria-label="Navegação principal">
+          @for (item of itensMenu; track item.rota) {
+            <a [routerLink]="item.rota" routerLinkActive="bg-brand-500! text-zinc-950!"
+               ariaCurrentWhenActive="page"
+               class="whitespace-nowrap rounded-lg px-3 py-2 text-xs font-semibold text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white">{{ item.rotulo }}</a>
+          }
+        </nav>
+      </div>
     </div>
-    <nav class="flex gap-2" aria-label="Navegacao principal">
-      <a routerLink="/fila" routerLinkActive="bg-emerald-100 text-emerald-900"
-         class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-600">Fila</a>
-      <a routerLink="/cardapio" routerLinkActive="bg-emerald-100 text-emerald-900"
-         class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-600">Cardapios</a>
-      <a routerLink="/fechamento" routerLinkActive="bg-emerald-100 text-emerald-900"
-         class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-600">Fechamento</a>
-      <a routerLink="/dashboard" routerLinkActive="bg-emerald-100 text-emerald-900"
-         class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-600">Dashboard</a>
-    </nav>
-  </div>
-</header>
+  </header>
 
-<main class="mx-auto max-w-7xl px-6 py-8">
-  <router-outlet />
-</main>
+  <main class="mx-auto w-full max-w-7xl flex-1 px-6 py-8">
+    <router-outlet />
+  </main>
+
+  <footer class="mt-12 border-t border-slate-200 bg-surface-card py-6 text-xs text-slate-500">
+    <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 sm:flex-row sm:px-6 lg:px-8">
+      <div>
+        <strong class="text-slate-700">Projeto Integrador</strong> • Sistema de Gestão de Merenda Escolar
+      </div>
+    </div>
+  </footer>
+</div>

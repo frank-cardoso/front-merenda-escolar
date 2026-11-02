@@ -20,13 +20,17 @@ export interface IndicadoresLogisticos {
   quantidadeFechamentosDoMes?: number;
   quantidadeFechamentosDaSemana?: number;
   datasFechamentosDoMes?: string[];
-  porTurma: {
-    turma: string; consumosRegistrados: number; alunosUnicos: number;
-    repeticoes: number; percentual: number | null; statusMeta: string; motivo: string;
-  }[];
-  ingredientes: AnaliseIndisponivel | null;
+  porTurma: PorTurma[];
+  ingredientes: AnaliseIngredientes | null;
   rotacaoCardapio: AnaliseIndisponivel | null;
   avisos: string[];
+}
+
+export interface PorTurma {
+  /** Ausente em schemaVersion 2/3 e nulo no balde "Sem turma". */
+  turmaId?: string | null;
+  turma: string; consumosRegistrados: number; alunosUnicos: number;
+  repeticoes: number; percentual: number | null; statusMeta: string; motivo: string;
 }
 
 export interface ItemRanking {
@@ -54,4 +58,20 @@ interface AnaliseIndisponivel {
   status: string;
   motivo: string;
   cicloSugeridoDias: number | null;
+}
+
+export interface IngredienteResto {
+  ingredienteId: string;
+  ingrediente: string;
+  amostra: number;
+  percentualRestoCom: number;
+  percentualRestoSem: number | null;
+  diferencaPp: number;
+}
+
+export interface AnaliseIngredientes {
+  status: 'DISPONIVEL' | 'DADOS_INSUFICIENTES';
+  basePercentualResto: number | null;
+  acimaDaBase: IngredienteResto[];
+  motivo: string;
 }

@@ -31,7 +31,7 @@ export class AceitacaoItensComponent implements AfterViewInit, OnChanges, OnDest
         labels: this.itens.map(item => item.item),
         datasets: [{ label: 'Aceitação medida (%)',
           data: this.itens.map(item => item.percentual),
-          backgroundColor: '#047857', borderRadius: 4 }],
+          backgroundColor: '#f59e0b', borderRadius: 4 }],
       },
       options: {
         indexAxis: 'y', responsive: true, maintainAspectRatio: false,

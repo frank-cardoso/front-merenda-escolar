@@ -8,4 +8,13 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
   styleUrl: './app.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class App {}
+export class App {
+  protected readonly itensMenu = [
+    { rota: '/fila', rotulo: 'Fila' },
+    { rota: '/cardapio', rotulo: 'Cardápios' },
+    { rota: '/alunos', rotulo: 'Alunos' },
+    { rota: '/turmas', rotulo: 'Turmas' },
+    { rota: '/fechamento', rotulo: 'Fechamento' },
+    { rota: '/dashboard', rotulo: 'Dashboard' },
+  ];
+}

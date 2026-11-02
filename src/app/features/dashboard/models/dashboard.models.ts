@@ -22,6 +22,7 @@ export interface CriarRelatorioIARequest {
   turno: Turno;
   receitaIds?: string[];
   datasSelecionadas?: string[];
+  turmaId?: string;
 }
 
 export interface CardapioAnalise {
@@ -66,6 +67,8 @@ export interface RelatorioIA {
   criadoEm: string;
   iniciadoEm: string | null;
   concluidoEm: string | null;
+  turmaId: string | null;
+  escopoCardapio: string | null;
 }
 
 export interface RelatorioResumo {

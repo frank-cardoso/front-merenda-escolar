@@ -4,7 +4,7 @@ import { finalize } from 'rxjs';
 import { CardapioFormComponent } from '../../components/cardapio-form/cardapio-form.component';
 import { CardapioApiService } from '../../data-access/cardapio-api.service';
 import { ReceitaApiService } from '../../data-access/receita-api.service';
-import { Cardapio, CardapioRequest, Receita } from '../../models/cardapio.models';
+import { Cardapio, CardapioRequest, Receita, Turno } from '../../models/cardapio.models';
 
 @Component({
   selector: 'app-cardapio-page',
@@ -82,7 +82,7 @@ export class CardapioPageComponent implements OnInit {
 
     operacao.pipe(finalize(() => this.salvando.set(false))).subscribe({
       next: () => {
-        this.aviso.set(emEdicao ? 'Cardapio atualizado.' : 'Cardapio cadastrado.');
+        this.aviso.set(emEdicao ? 'Cardápio atualizado.' : 'Cardápio cadastrado.');
         this.fecharFormulario();
         this.carregar();
       },
@@ -92,13 +92,13 @@ export class CardapioPageComponent implements OnInit {
 
   excluir(cardapio: Cardapio): void {
     const confirmado = confirm(
-      `Excluir o cardapio "${cardapio.nomeRefeicao}" de ${cardapio.data} (${cardapio.turno})?`);
+      `Excluir o cardápio "${cardapio.nomeRefeicao}" de ${cardapio.data} (${cardapio.turno})?`);
     if (!confirmado) return;
 
     this.limparMensagens();
     this.cardapioApi.excluir(cardapio.id).subscribe({
       next: () => {
-        this.aviso.set('Cardapio excluido.');
+        this.aviso.set('Cardápio excluído.');
         this.carregar();
       },
       error: (erro: HttpErrorResponse) => this.erro.set(this.montarMensagemErro(erro)),
@@ -111,6 +111,16 @@ export class CardapioPageComponent implements OnInit {
       .join(', ');
   }
 
+  classeTurno(turno: Turno): string {
+    const classes: Record<Turno, string> = {
+      MANHA: 'border-blue-200 bg-blue-100 text-blue-700',
+      TARDE: 'border-brand-200 bg-brand-100 text-brand-800',
+      NOITE: 'border-indigo-200 bg-indigo-100 text-indigo-700',
+      INTEGRAL: 'border-emerald-200 bg-emerald-100 text-emerald-800',
+    };
+    return classes[turno] ?? 'border-slate-200 bg-slate-100 text-slate-700';
+  }
+
   private limparMensagens(): void {
     this.erro.set(null);
     this.aviso.set(null);
@@ -118,12 +128,12 @@ export class CardapioPageComponent implements OnInit {
 
   private montarMensagemErro(erro: HttpErrorResponse): string {
     if (erro.status === 0) {
-      return 'Nao foi possivel comunicar com a API. Confirme se o backend esta rodando em http://localhost:8081.';
+      return 'Não foi possível comunicar com a API. Confirme se o backend está rodando em http://localhost:8081.';
     }
 
     const detalhe = erro.error?.detail;
     if (detalhe) return detalhe;
 
-    return `Erro ${erro.status} ao processar a solicitacao.`;
+    return `Erro ${erro.status} ao processar a solicitação.`;
   }
 }

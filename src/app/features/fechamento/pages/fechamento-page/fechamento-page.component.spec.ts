@@ -26,7 +26,7 @@ function montar(itens: { receitaId: string | null; nome: string }[], consumos = 
   const dashboardApi = jasmine.createSpyObj<DashboardApiService>('DashboardApiService',
     ['buscarConsolidacao', 'criarRelatorio']);
   const fechamentoApi = jasmine.createSpyObj<FechamentoApiService>('FechamentoApiService',
-    ['registrarMedicao', 'listarMedicoes']);
+    ['registrarMedicao', 'registrarFechamento', 'listarMedicoes']);
 
   cardapioApi.listar.and.returnValue(of(cardapio(itens)));
   dashboardApi.buscarConsolidacao.and.returnValue(of({
@@ -36,7 +36,7 @@ function montar(itens: { receitaId: string | null; nome: string }[], consumos = 
   } as ConsolidacaoConsumo));
   dashboardApi.criarRelatorio.and.returnValue(
     of({ relatorioId: 'r1', status: 'PENDENTE', statusUrl: '/r1' } as CriarRelatorioIAResponse));
-  fechamentoApi.registrarMedicao.and.returnValue(of({}));
+  fechamentoApi.registrarFechamento.and.callFake((request) => of(request.medicoes));
   fechamentoApi.listarMedicoes.and.returnValue(of([]));
 
   TestBed.configureTestingModule({
@@ -110,12 +110,21 @@ describe('FechamentoPageComponent', () => {
       { receitaId: 'r-maca', nome: 'Maçã' },
       { receitaId: 'r-cuscuz', nome: 'Cuscuz' },
     ]);
+    let medicoesAoGerarRelatorio = 0;
+    dashboardApi.criarRelatorio.and.callFake(() => {
+      medicoesAoGerarRelatorio = fechamentoApi.registrarFechamento.calls.count();
+      return of({ relatorioId: 'r1', status: 'PENDENTE', statusUrl: '/r1' } as CriarRelatorioIAResponse);
+    });
 
     componente.fechar();
 
-    expect(fechamentoApi.registrarMedicao).toHaveBeenCalledTimes(2);
+    expect(fechamentoApi.registrarFechamento).toHaveBeenCalledTimes(1);
+    const medicoes = fechamentoApi.registrarFechamento.calls.first().args[0].medicoes;
+    expect(medicoes.map((m) => m.receitaId)).toEqual(['r-maca', 'r-cuscuz']);
     // O servido enviado e o derivado, nao a contagem do QR.
-    expect(fechamentoApi.registrarMedicao.calls.first().args[0].porcoesServidas).toBe(91);
+    expect(medicoes.every((m) => m.porcoesServidas === 91)).toBeTrue();
+    // O relatorio so e pedido depois que o fechamento ja foi enviado.
+    expect(medicoesAoGerarRelatorio).toBe(1);
     expect(dashboardApi.criarRelatorio).toHaveBeenCalledTimes(1);
     expect(componente.relatorioId()).toBe('r1');
     fixture.destroy();
@@ -125,7 +134,7 @@ describe('FechamentoPageComponent', () => {
     const { componente, fixture, fechamentoApi, dashboardApi } = montar([
       { receitaId: 'r-maca', nome: 'Maçã' },
     ]);
-    fechamentoApi.registrarMedicao.and.returnValue(
+    fechamentoApi.registrarFechamento.and.returnValue(
       throwError(() => ({ error: { detail: 'Resto no prato (99) não pode superar o servido (91)' } })));
 
     componente.fechar();
@@ -133,6 +142,7 @@ describe('FechamentoPageComponent', () => {
     expect(dashboardApi.criarRelatorio).not.toHaveBeenCalled();
     expect(componente.erro()).toContain('não pode superar');
     expect(componente.relatorioId()).toBeNull();
+    expect(componente.fechando()).toBeFalse();
     fixture.destroy();
   });
 

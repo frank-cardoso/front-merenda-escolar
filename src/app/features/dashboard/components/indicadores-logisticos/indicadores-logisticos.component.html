@@ -1,101 +1,204 @@
-<section class="space-y-5" aria-label="Indicadores logísticos">
+<section class="space-y-6" aria-label="Indicadores logísticos">
   @if (dados().status === 'INDISPONIVEL') {
-    <div class="rounded-xl border border-amber-200 bg-amber-50 p-5" role="status">
-      <h3 class="font-bold text-amber-950">Indicadores indisponíveis</h3>
-      <p class="mt-1 text-sm text-amber-900">A análise estatística não respondeu. Os valores não foram substituídos por zero.</p>
+    <div class="rounded-2xl border border-brand-200 bg-brand-50 p-5" role="status">
+      <h3 class="font-bold text-brand-950">Indicadores indisponíveis</h3>
+      <p class="mt-1 text-sm text-brand-900">A análise estatística não respondeu. Os valores não foram substituídos por zero.</p>
     </div>
   } @else {
-    <div>
-      <h3 class="text-lg font-bold text-slate-900">Resumo operacional do dia</h3>
-      <p class="mt-1 text-sm text-slate-500">Planejamento, autorizações registradas, bloqueios e turmas do dia e turno selecionados.</p>
-    </div>
-    <div class="grid gap-4 lg:grid-cols-3">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
       @if (dados().execucaoPlanejamento; as meta) {
-        <article class="rounded-xl border border-slate-200 bg-white p-5 lg:col-span-2">
-          <div class="flex flex-wrap items-start justify-between gap-3">
-            <div><h3 class="font-semibold">Execução registrada do planejamento — dia de referência</h3>
-              <p class="mt-2 text-3xl font-bold">{{ meta.percentual === null ? 'Não avaliável' : meta.percentual + '%' }}</p>
+        <section class="flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-surface-card p-6 shadow-xs lg:col-span-2" aria-label="Execução do planejamento">
+          <div>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 class="text-base font-bold text-slate-900">Execução do Planejamento</h3>
+                <p class="mt-0.5 text-xs text-slate-500">Autorizações registradas em relação ao volume planejado de refeições — dia de referência.</p>
+              </div>
+              <span class="inline-flex items-center rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-800">
+                Meta {{ meta.metaPercentual }}% • {{ meta.statusMeta === 'ATINGIDA' ? 'Atingida' : meta.statusMeta === 'ABAIXO' ? 'Abaixo da meta' : 'Não avaliável' }}
+              </span>
             </div>
-            <span class="rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold">
-              Meta {{ meta.metaPercentual }}% · {{ meta.statusMeta === 'ATINGIDA' ? 'atingida' : meta.statusMeta === 'ABAIXO' ? 'abaixo da meta' : 'não avaliável' }}
-            </span>
+            <div class="mt-6">
+              <div class="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+                <div>
+                  <span class="text-4xl font-extrabold tracking-tight text-slate-900">{{ meta.percentual === null ? 'Não avaliável' : meta.percentual + '%' }}</span>
+                  <span class="ml-1.5 text-xs font-semibold text-slate-400">({{ meta.consumosRegistrados }} autorizações registradas / {{ meta.refeicoesPlanejadas }} refeições planejadas)</span>
+                </div>
+                @if (meta.diferencaMetaPp !== null) {
+                  <div class="text-right text-xs font-bold">
+                    <span class="text-slate-600">Diferença para a meta: </span>
+                    <span [class]="meta.diferencaMetaPp < 0 ? 'text-rose-600' : 'text-slate-900'">{{ meta.diferencaMetaPp }} p.p.</span>
+                  </div>
+                }
+              </div>
+              <div class="relative h-4 w-full overflow-hidden rounded-full bg-slate-100 p-0.5" aria-hidden="true">
+                <div data-testid="barra-meta" class="h-full rounded-full bg-brand-500" [style.width.%]="limitarBarra(meta.percentual)"></div>
+                <div class="absolute bottom-0 top-0 z-10 w-1 bg-zinc-950" [style.left.%]="limitarBarra(meta.metaPercentual)"></div>
+              </div>
+              <div class="relative mt-2 flex w-full justify-between text-[11px] font-semibold text-slate-400" aria-hidden="true">
+                <span>0%</span>
+                <span class="absolute -translate-x-1/2 text-slate-900" [style.left.%]="limitarBarra(meta.metaPercentual)">▲ Meta {{ meta.metaPercentual }}%</span>
+                <span>100%</span>
+              </div>
+            </div>
           </div>
-          <div class="relative mt-5 h-4 rounded-full bg-slate-100" aria-hidden="true">
-            <div data-testid="barra-meta" class="h-full rounded-full bg-emerald-600"
-              [style.width.%]="limitarBarra(meta.percentual)"></div>
-            <div class="absolute -top-1 h-6 w-0.5 bg-slate-900" [style.left.%]="limitarBarra(meta.metaPercentual)"></div>
-          </div>
-          <p class="mt-3 text-sm text-slate-600">{{ meta.consumosRegistrados }} autorizações registradas / {{ meta.refeicoesPlanejadas }} refeições planejadas.
-            @if (meta.diferencaMetaPp !== null) { Diferença: {{ meta.diferencaMetaPp }} pontos percentuais. }
-          </p>
-          <p class="mt-1 text-xs text-slate-500">Essa taxa mede somente registros de autorização em relação ao planejamento. Não mede presença, consumo efetivo, aceitação ou desperdício.</p>
-        </article>
+          <p class="mt-6 border-t border-slate-100 pt-4 text-xs text-slate-500">Essa taxa mede somente registros de autorização em relação ao planejamento. Não mede presença, consumo efetivo, aceitação ou desperdício.</p>
+        </section>
       }
-      @if (dados().atendimentos; as atendimentos) {
-        <article class="rounded-xl border border-slate-200 bg-white p-5">
-          <h3 class="font-semibold">Autorizações registradas — dia e turno de referência</h3>
-          <dl class="mt-4 grid grid-cols-2 gap-4">
-            <div><dt class="text-sm text-slate-500">Alunos únicos autorizados</dt><dd class="mt-1 text-3xl font-bold">{{ atendimentos.alunosUnicos }}</dd></div>
-            <div><dt class="text-sm text-slate-500">Repetições</dt><dd class="mt-1 text-3xl font-bold">{{ atendimentos.repeticoes }}</dd></div>
-          </dl>
-          <p class="mt-4 text-xs text-slate-500">Mostra autorizações registradas na fila. Não confirma presença nem que a refeição foi consumida. Uma nova autorização do mesmo aluno no mesmo turno conta como repetição.</p>
-        </article>
+      @if (atendimentosExibidos(); as atendimentos) {
+        <section class="flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-surface-card p-6 shadow-xs" aria-label="Métricas da fila">
+          <div>
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-bold text-slate-900">Métricas da Fila</h3>
+              <span class="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">Turno {{ dados().turno }} • {{ turmaSelecionada() === 'TODAS' ? 'Todas as turmas' : 'Turma ' + nomeTurmaSelecionada() }}</span>
+            </div>
+            <p class="mt-0.5 text-xs text-slate-500">Autorizações registradas — dia e turno de referência{{ turmaSelecionada() === 'TODAS' ? '' : ', turma selecionada' }}.</p>
+            <dl class="mt-6 grid grid-cols-2 gap-4">
+              <div class="rounded-xl border border-slate-100 bg-surface-subtle p-4">
+                <dt class="mb-1 block text-xs font-semibold text-slate-500">Alunos únicos autorizados</dt>
+                <dd class="text-2xl font-extrabold text-slate-900">{{ atendimentos.alunosUnicos }}</dd>
+              </div>
+              <div class="rounded-xl border border-slate-100 bg-surface-subtle p-4">
+                <dt class="mb-1 block text-xs font-semibold text-slate-500">Repetições</dt>
+                <dd class="text-2xl font-extrabold text-slate-900">{{ atendimentos.repeticoes }}</dd>
+                <p class="mt-1 text-[10px] font-medium text-slate-400">Mesmo aluno, mesmo turno</p>
+              </div>
+            </dl>
+          </div>
+          <p class="mt-6 border-t border-slate-100 pt-4 text-xs leading-relaxed text-slate-500">Registros da fila: não confirmam presença nem que a refeição foi consumida.</p>
+        </section>
       }
     </div>
 
-    <div class="pt-2">
-      <h3 class="text-lg font-bold text-slate-900">Aceitação alimentar — histórico de fechamentos</h3>
-      <p class="mt-1 text-sm text-slate-500">Esta seção usa os fechamentos da merendeira dos últimos 7 ou 30 dias até a data de referência.</p>
-    </div>
-    <article class="rounded-xl border border-slate-200 bg-white p-5">
-      <div class="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 class="text-lg font-bold">Aceitação dos itens</h3>
-          <p class="mt-1 text-sm text-slate-500">Calculada por item: porções servidas menos resto devolvido, dividido pelas porções servidas.</p>
-        </div>
-        <div class="flex rounded-lg bg-slate-100 p-1" role="group" aria-label="Período da aceitação">
-          <button class="rounded-md px-3 py-1.5 text-sm" [class.bg-white]="periodoAceitacao() === 'mes'"
-            [class.font-semibold]="periodoAceitacao() === 'mes'" (click)="periodoAceitacao.set('mes')">Mês</button>
-          <button class="rounded-md px-3 py-1.5 text-sm" [class.bg-white]="periodoAceitacao() === 'semana'"
-            [class.font-semibold]="periodoAceitacao() === 'semana'" (click)="periodoAceitacao.set('semana')">Semana</button>
-        </div>
+    <section class="space-y-4" aria-label="Aceitação alimentar">
+      <div>
+        <h2 class="text-lg font-bold text-slate-900">Aceitação Alimentar — Histórico de Fechamentos</h2>
+        <p class="text-xs text-slate-500">Fechamentos da merendeira dos últimos 7 ou 30 dias até a data de referência.</p>
       </div>
-      <p class="mt-1 text-sm text-slate-500">
-        {{ periodoAceitacao() === 'mes' ? 'Últimos 30 dias até a data de referência · mínimo de 3 fechamentos por item para reduzir oscilações.' : 'Últimos 7 dias até a data de referência · leitura exploratória; o item pode ter apenas 1 fechamento na semana.' }}
-      </p>
-      @if (itensAceitacao().length) {
-        <div class="mt-5"><app-aceitacao-itens [itens]="itensAceitacao()" /></div>
-        <div class="mt-4 overflow-x-auto">
-          <table class="w-full text-left text-sm">
-            <caption class="sr-only">Aceitação calculada a partir dos fechamentos</caption>
-            <thead><tr class="border-b text-slate-500"><th scope="col" class="p-2">Item</th><th scope="col">Aceitação</th><th scope="col">Consumidas estimadas / servidas</th><th scope="col">Resto</th><th scope="col">Fechamentos</th></tr></thead>
-            <tbody>@for (item of itensAceitacao(); track item.item) {
-              <tr class="border-b border-slate-100"><th scope="row" class="p-2 font-medium">{{ item.item }}</th><td>{{ item.percentual === null ? 'Não avaliável' : item.percentual + '%' }}</td><td>{{ item.porcoesConsumidas }} / {{ item.porcoesServidas }}</td><td>{{ item.restoNoPrato }}</td><td>{{ item.fechamentos }}</td></tr>
-            }</tbody>
-          </table>
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <article class="rounded-2xl border border-slate-200/90 bg-surface-card p-6 shadow-xs lg:col-span-2">
+          <div class="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Aceitação dos Itens Preparados</h3>
+              <p class="text-xs text-slate-500">Cálculo por item: (porções servidas − resto devolvido) / porções servidas.</p>
+            </div>
+            <div class="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-xs font-semibold" role="group" aria-label="Período da aceitação">
+              <button type="button" class="rounded-md px-2.5 py-1"
+                [class]="periodoAceitacao() === 'mes' ? 'bg-brand-400 font-bold text-zinc-950 shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+                [attr.aria-pressed]="periodoAceitacao() === 'mes'" (click)="periodoAceitacao.set('mes')">Mês (30d)</button>
+              <button type="button" class="rounded-md px-2.5 py-1"
+                [class]="periodoAceitacao() === 'semana' ? 'bg-brand-400 font-bold text-zinc-950 shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+                [attr.aria-pressed]="periodoAceitacao() === 'semana'" (click)="periodoAceitacao.set('semana')">Semana (7d)</button>
+            </div>
+          </div>
+          @if (itensAceitacao().length) {
+            <app-aceitacao-itens [itens]="itensAceitacao()" />
+            <div class="mt-4 overflow-x-auto">
+              <table class="w-full text-left text-sm">
+                <caption class="sr-only">Aceitação calculada a partir dos fechamentos</caption>
+                <thead><tr class="border-b border-slate-200 text-xs text-slate-500"><th scope="col" class="p-2">Item</th><th scope="col">Aceitação</th><th scope="col">Consumidas estimadas / servidas</th><th scope="col">Resto</th><th scope="col">Fechamentos</th></tr></thead>
+                <tbody>@for (item of itensAceitacao(); track item.item) {
+                  <tr class="border-b border-slate-100"><th scope="row" class="p-2 font-medium">{{ item.item }}</th><td>{{ item.percentual === null ? 'Não avaliável' : item.percentual + '%' }}</td><td>{{ item.porcoesConsumidas }} / {{ item.porcoesServidas }}</td><td>{{ item.restoNoPrato }}</td><td>{{ item.fechamentos }}</td></tr>
+                }</tbody>
+              </table>
+            </div>
+          } @else {
+            <div class="my-2 rounded-xl border border-dashed border-brand-200 bg-brand-50/40 p-8 text-center">
+              <h4 class="text-xs font-bold text-slate-800">Amostragem Insuficiente no Período</h4>
+              <p class="mx-auto mt-1 max-w-sm text-xs text-slate-500">Nenhum item atingiu o critério de amostra deste período.</p>
+            </div>
+          }
+          <div class="mt-3 flex flex-wrap items-center justify-between gap-x-4 text-[11px] text-slate-400">
+            @if (periodoAceitacao() === 'mes') {
+              <span>Janela: 30 dias até a data de referência</span>
+              <span>Mínimo necessário: 3 fechamentos por item</span>
+            } @else {
+              <span>Janela: 7 dias até a data de referência</span>
+              <span>Leitura exploratória; o item pode ter apenas 1 fechamento na semana</span>
+            }
+          </div>
+        </article>
+
+        <article class="flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-surface-card p-6 shadow-xs">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Aceitação de Ingredientes</h3>
+            <p class="mt-0.5 text-xs text-slate-500">Resto dos pratos com o ingrediente contra os pratos sem ele; associação observada, não causa comprovada.</p>
+            @if (dados().ingredientes?.acimaDaBase?.length) {
+              <ul class="mt-4 space-y-2" data-testid="lista-ingredientes-acima-base">
+                @for (ingrediente of dados().ingredientes!.acimaDaBase; track ingrediente.ingredienteId) {
+                  <li class="flex items-center justify-between gap-3 rounded-xl border border-brand-200 bg-brand-50 p-3">
+                    <div>
+                      <span class="block text-xs font-bold text-brand-900">{{ ingrediente.ingrediente }}</span>
+                      <span class="block text-[11px] text-brand-700">Resto com: {{ ingrediente.percentualRestoCom }}% • Resto sem: {{ ingrediente.percentualRestoSem === null ? 'sem contraponto' : ingrediente.percentualRestoSem + '%' }} • Amostra: {{ ingrediente.amostra }}</span>
+                    </div>
+                    <span class="shrink-0 rounded-full border border-brand-300 bg-white px-2 py-0.5 text-[11px] font-bold text-brand-800">+{{ ingrediente.diferencaPp }} p.p.</span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <div class="mt-4 rounded-xl border border-brand-200 bg-brand-50 p-4">
+                <p class="text-xs leading-relaxed text-brand-800">{{ dados().ingredientes?.motivo || 'Dados insuficientes.' }}</p>
+              </div>
+            }
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <article class="overflow-hidden rounded-2xl border border-slate-200/90 bg-surface-card shadow-xs">
+      <div class="flex flex-wrap items-start justify-between gap-3 p-6 pb-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Autorizações Registradas por Turma — Dia de Referência</h3>
+          <p class="mt-0.5 text-xs text-slate-500">A turma exibida é a turma vigente do aluno na data do consumo.</p>
         </div>
-      } @else { <p class="mt-5 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">Nenhum item atingiu o critério de amostra deste período.</p> }
-    </article>
-
-    <article class="rounded-xl border border-slate-200 bg-white p-5">
-      <h3 class="text-lg font-bold">Autorizações registradas por turma — dia de referência</h3>
-      <p class="mt-1 text-sm text-slate-500">Detalhamento das autorizações registradas no dia e turno selecionados. Esses registros não comprovam consumo. A turma atual é a do cadastro do aluno; sem presença elegível, a meta de adesão não pode ser avaliada.</p>
-      <div class="mt-4 overflow-x-auto"><table class="w-full text-left text-sm">
-        <thead><tr class="border-b text-slate-500"><th scope="col" class="p-2">Turma</th><th scope="col">Alunos únicos autorizados</th><th scope="col">Autorizações</th><th scope="col">Repetições</th><th scope="col">Adesão / meta</th></tr></thead>
-        <tbody>@for (turma of dados().porTurma; track turma.turma) {
-          <tr class="border-b border-slate-100"><th scope="row" class="p-2 font-medium">{{ turma.turma }}</th><td>{{ turma.alunosUnicos }}</td><td>{{ turma.consumosRegistrados }}</td><td>{{ turma.repeticoes }}</td><td class="max-w-64 py-3 text-slate-500">Não avaliável. {{ turma.motivo }}</td></tr>
-        } @empty { <tr><td colspan="5" class="py-4 text-slate-500">Nenhum atendimento registrado.</td></tr> }</tbody>
+        <span class="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{{ porTurmaFiltrado().length }} {{ porTurmaFiltrado().length === 1 ? 'grupo com atendimento' : 'grupos com atendimento' }}</span>
+      </div>
+      <div class="overflow-x-auto"><table class="w-full text-left text-sm">
+        <thead><tr class="bg-surface-subtle text-[11px] uppercase tracking-wider text-slate-500"><th scope="col" class="px-6 py-3">Turma</th><th scope="col">Alunos únicos autorizados</th><th scope="col">Autorizações</th><th scope="col" class="pr-6">Repetições</th></tr></thead>
+        <tbody>@for (turma of porTurmaFiltrado(); track chaveTurma(turma)) {
+          <tr class="border-b border-slate-100" [attr.data-testid]="'linha-turma-' + chaveTurma(turma)">
+            <th scope="row" class="px-6 py-3 font-semibold text-slate-900">{{ turma.turma }}</th>
+            <td>{{ turma.alunosUnicos }}</td><td>{{ turma.consumosRegistrados }}</td><td class="pr-6">{{ turma.repeticoes }}</td>
+          </tr>
+        } @empty { <tr><td colspan="4" class="px-6 py-4 text-slate-500">Nenhum atendimento registrado.</td></tr> }</tbody>
       </table></div>
+      <p class="px-6 py-3 text-[11px] text-slate-500">Registros não comprovam consumo final. Aluno sem enturmação naquela data aparece em "Sem turma".</p>
     </article>
-
-    <div class="grid gap-4 md:grid-cols-2">
-      <article class="rounded-xl border border-slate-200 bg-white p-5"><h3 class="font-bold">Aceitação de ingredientes — janela histórica</h3><p class="mt-2 text-sm text-slate-600">Comparação calculada em uma janela histórica de medições, e não somente no dia selecionado. {{ dados().ingredientes?.motivo || 'Dados insuficientes.' }}</p></article>
-      <article class="rounded-xl border border-slate-200 bg-white p-5"><h3 class="font-bold">Ciclo de cardápio</h3><p class="mt-2 text-sm text-slate-600">{{ dados().rotacaoCardapio?.motivo || 'Dados insuficientes.' }}</p></article>
-    </div>
   }
-  <details class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-    <summary class="cursor-pointer font-semibold">Como interpretar estes dados</summary>
-    <p class="mt-3 text-xs text-slate-500">Os avisos abaixo explicam a origem e o período de cada indicador. Registros da fila não substituem as medições de sobra para avaliar aceitação ou desperdício.</p>
-    <ul class="mt-3 list-disc space-y-2 pl-5">@for (aviso of dados().avisos; track aviso) { <li>{{ aviso }}</li> }</ul>
+
+  <details class="group rounded-2xl border border-slate-200/90 bg-surface-card shadow-xs">
+    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-sm font-semibold text-slate-900 [&::-webkit-details-marker]:hidden">
+      <span class="flex items-center gap-3">
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-100 text-brand-700" aria-hidden="true">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </span>
+        Como interpretar estes indicadores e regras de negócio
+      </span>
+      <svg class="h-4 w-4 text-slate-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    </summary>
+    <div class="space-y-4 border-t border-slate-100 p-4 text-xs text-slate-600">
+      <div>
+        <p class="font-semibold text-slate-800">Escopo dos indicadores</p>
+        <p class="mt-1">Execução registrada, autorizações, cardápio e registros por turma consideram somente o dia {{ dados().dataReferencia }} no turno {{ dados().turno }}. A aceitação dos itens usa os fechamentos dos últimos 7 ou 30 dias até essa data, conforme o período escolhido. Os dados operacionais do dia não são indicadores mensais ou semanais.</p>
+      </div>
+      <div>
+        <p class="font-semibold text-slate-800">Limites do que é medido</p>
+        <ul class="mt-1 list-disc space-y-1 pl-5">
+          <li>Execução do planejamento: essa taxa mede somente registros de autorização em relação ao planejamento. Não mede presença, consumo efetivo, aceitação ou desperdício.</li>
+          <li>Métricas da fila: mostram autorizações registradas na fila. Não confirmam presença nem que a refeição foi consumida. Uma nova autorização do mesmo aluno no mesmo turno conta como repetição.</li>
+          <li>Diferença do planejamento: é a diferença entre refeições planejadas e autorizações registradas. Não é desperdício de alimento.</li>
+          <li>Por turma: esses registros não comprovam consumo. A turma exibida é a turma vigente do aluno na data do consumo; consumo de aluno sem enturmação naquela data aparece em "Sem turma".</li>
+          <li>Aceitação de ingredientes: comparação calculada em uma janela histórica de medições, e não somente no dia selecionado.</li>
+          <li>Registros da fila não substituem as medições de sobra para avaliar aceitação ou desperdício.</li>
+        </ul>
+      </div>
+      @if (dados().avisos.length) {
+        <div>
+          <p class="font-semibold text-slate-800">Avisos do cálculo</p>
+          <p class="mt-1 text-slate-500">Os avisos abaixo explicam a origem e o período de cada indicador.</p>
+          <ul class="mt-2 list-disc space-y-2 pl-5">@for (aviso of dados().avisos; track aviso) { <li>{{ aviso }}</li> }</ul>
+        </div>
+      }
+    </div>
   </details>
 </section>

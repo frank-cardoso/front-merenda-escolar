@@ -25,6 +25,7 @@ export class DashboardPageComponent implements OnInit {
   readonly aba = signal<'indicadores' | 'analise'>('indicadores');
   readonly dataReferencia = signal(this.formatarDataLocal(new Date()));
   readonly turno = signal<Turno>('NOITE');
+  readonly turmaSelecionada = signal<string>('TODAS');
   readonly receitasSelecionadas = signal<string[]>([]);
   readonly cardapiosAnalise = signal<CardapioAnalise[]>([]);
   readonly cardapioSelecionado = signal<string | null>(null);
@@ -89,10 +90,12 @@ export class DashboardPageComponent implements OnInit {
     this.gerandoRelatorio.set(true);
     this.relatorio.set(null);
     this.erro.set(null);
+    const turmaId = this.turmaIdSelecionada();
     const request = {
       dataReferencia: this.dataReferencia(), turno: this.turno(),
       ...(this.receitasSelecionadas().length ? { receitaIds: this.receitasSelecionadas() } : {}),
       ...(this.cardapioSelecionado() ? { datasSelecionadas: this.cardapioSelecionadoDatas() } : {}),
+      ...(turmaId ? { turmaId } : {}),
     };
     this.acompanhamento = this.dashboardApi.criarRelatorio(request).pipe(
       switchMap(resposta => this.consultarAteTerminar(resposta.relatorioId)),
@@ -194,6 +197,48 @@ export class DashboardPageComponent implements OnInit {
         error: erro => this.erro.set(this.montarMensagemErro(erro)) });
   }
 
+  selecionarTurma(valor: string): void {
+    this.turmaSelecionada.set(valor);
+  }
+
+  nomeTurmaSelecionada(): string {
+    if (this.turmaSelecionada() === 'TODAS') return '';
+    const turma = this.indicadoresAtuais()?.porTurma
+      .find(item => (item.turmaId ?? item.turma) === this.turmaSelecionada());
+    return turma?.turma ?? '';
+  }
+
+  /** null para "Todas as turmas" e para o balde "Sem turma" (turmaId nao é um UUID real). */
+  turmaIdSelecionada(): string | null {
+    if (this.turmaSelecionada() === 'TODAS') return null;
+    const turma = this.indicadoresAtuais()?.porTurma
+      .find(item => (item.turmaId ?? item.turma) === this.turmaSelecionada());
+    return turma?.turmaId ?? null;
+  }
+
+  dataReferenciaFormatada(): string {
+    const [ano, mes, dia] = this.dataReferencia().split('-');
+    return ano && mes && dia ? `${dia}/${mes}/${ano}` : this.dataReferencia();
+  }
+
+  /** O backend manda "Cardápio selecionado: X, Y" quando o escopo é um subconjunto de itens, ou
+   * o nome do cardápio inteiro quando não há filtro. Aqui só tira o prefixo de contexto da IA. */
+  itensDoEscopo(escopoCardapio: string): string {
+    return escopoCardapio.replace(/^Cardápio selecionado:\s*/, '');
+  }
+
+  /** Quebra o resumo corrido da IA em frases, uma por tópico, para não virar parede de texto. */
+  resumoEmTopicos(resumo: string): string[] {
+    return resumo.split(/(?<=[.!?])\s+/).map(frase => frase.trim()).filter(frase => frase.length > 0);
+  }
+
+  dataHoraFormatada(isoString: string | null): string {
+    if (!isoString) return '';
+    const data = new Date(isoString);
+    if (Number.isNaN(data.getTime())) return isoString;
+    return data.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+  }
+
   verIndicadoresAtuais(): void {
     this.carregarConsolidacao();
   }
@@ -205,6 +250,7 @@ export class DashboardPageComponent implements OnInit {
     this.historicoConsulta.unsubscribe();
     if (campo === 'data') this.dataReferencia.set(valor);
     if (campo === 'turno') this.turno.set(valor as Turno);
+    this.turmaSelecionada.set('TODAS');
     this.relatorio.set(null);
     this.consolidacao.set(null);
     this.indicadoresAtuais.set(null);
@@ -330,9 +376,9 @@ export class DashboardPageComponent implements OnInit {
         fechamentos: diasDoCardapio ?? item.fechamentos ?? atual?.fechamentos ?? 0,
       });
     });
-    this.opcoesItens.set([...receitaIds]
-      .map(receitaId => atuais.get(receitaId))
-      .filter(item => item !== undefined) as IndicadoresLogisticos['aceitacaoItens']);
+    // Os checkboxes mostram o universo inteiro do cardápio, não só o que está selecionado no
+    // momento; desmarcar um item não pode fazê-lo sumir da lista.
+    this.opcoesItens.set([...atuais.values()]);
   }
 
   private emAndamento(relatorio: RelatorioIA): boolean {

@@ -34,7 +34,7 @@ export class FilaPageComponent {
     const qrCode = parseAlunoQrCode(conteudoQr);
     if (!qrCode.valido) {
       this.ultimoCodigoLido.set(null);
-      this.erro.set('QR Code invalido ou fora do padrao esperado.');
+      this.erro.set('QR Code inválido ou fora do padrão esperado.');
       return;
     }
 
@@ -60,7 +60,7 @@ export class FilaPageComponent {
 
   private montarMensagemErro(erro: HttpErrorResponse): string {
     if (erro.status === 0) {
-      return 'Nao foi possivel comunicar com a API. Confirme se o backend esta rodando em http://localhost:8081.';
+      return 'Não foi possível comunicar com a API. Confirme se o backend está rodando em http://localhost:8081.';
     }
 
     return `Erro ${erro.status} ao validar consumo. Verifique o backend e tente novamente.`;

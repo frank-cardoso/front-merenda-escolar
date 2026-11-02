@@ -8,9 +8,18 @@
     <div>
     <span class="inline-flex items-center rounded border border-brand-300 bg-brand-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-brand-900">Operação na fila</span>
     <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-      Leia o QR Code do aluno
+      {{ metodo() === 'QR_CODE' ? 'Leia o QR Code do aluno' : 'Validação facial do aluno' }}
     </h2>
     <p class="mt-1 text-sm text-slate-600">A validação é feita sem IA e registra somente um consumo por turno.</p>
+    </div>
+
+    <div class="inline-flex rounded-xl border border-slate-200/80 bg-slate-100/90 p-1" role="tablist" aria-label="Método de identificação">
+      <button type="button" class="rounded-lg px-4 py-1.5 text-xs transition"
+        [class]="metodo() === 'QR_CODE' ? 'bg-brand-400 font-bold text-zinc-950 shadow-xs' : 'font-semibold text-slate-600 hover:text-slate-900'"
+        [attr.aria-pressed]="metodo() === 'QR_CODE'" (click)="selecionarMetodo('QR_CODE')">QR Code</button>
+      <button type="button" class="rounded-lg px-4 py-1.5 text-xs transition"
+        [class]="metodo() === 'FACIAL' ? 'bg-brand-400 font-bold text-zinc-950 shadow-xs' : 'font-semibold text-slate-600 hover:text-slate-900'"
+        [attr.aria-pressed]="metodo() === 'FACIAL'" (click)="selecionarMetodo('FACIAL')">Reconhecimento facial</button>
     </div>
 
     @if (autorizadasNaSessao() > 0) {
@@ -20,34 +29,55 @@
       </p>
     }
 
-    <div>
-      <app-qr-scanner [leituraPausada]="processando()" (codigoLido)="validarQr($event)" />
-    </div>
+    @if (metodo() === 'QR_CODE') {
+      <div>
+        <app-qr-scanner [leituraPausada]="processando()" (codigoLido)="validarQr($event)" />
+      </div>
 
-    <div class="rounded-2xl border border-slate-200 bg-surface-card p-5 shadow-sm sm:p-6">
-      <label class="block text-sm font-bold text-slate-900" for="codigo-manual">
-        Código de teste
-      </label>
-      <div class="mt-2 flex flex-col gap-3 sm:flex-row">
+      <div class="rounded-2xl border border-slate-200 bg-surface-card p-5 shadow-sm sm:p-6">
+        <label class="block text-sm font-bold text-slate-900" for="codigo-manual">
+          Código de teste
+        </label>
+        <div class="mt-2 flex flex-col gap-3 sm:flex-row">
+          <input
+            #codigoManual
+            id="codigo-manual"
+            type="text"
+            value="ALU-001"
+            class="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold tracking-wider text-slate-800 outline-none placeholder:font-normal focus:border-brand-500 focus:ring-2 focus:ring-brand-200"
+            placeholder="ALU-001"
+          />
+          <button
+            type="button"
+            class="rounded-lg bg-zinc-900 px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-black focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:cursor-not-allowed disabled:bg-slate-300"
+            [disabled]="processando()"
+            (click)="validarCodigoManual(codigoManual.value)"
+          >
+            Validar código
+          </button>
+        </div>
+        <p class="mt-2 text-xs text-slate-500">Use ALU-001, ALU-002 ou ALU-003 para demonstração.</p>
+      </div>
+    } @else {
+      <div class="rounded-2xl border border-slate-200 bg-surface-card p-5 shadow-sm sm:p-6">
+        <label class="block text-sm font-bold text-slate-900" for="codigo-facial">
+          Código do aluno
+        </label>
+        <p class="mt-1 text-xs text-slate-500">Confirma 1:1 contra o rosto já cadastrado desse aluno — não busca entre todos.</p>
         <input
-          #codigoManual
-          id="codigo-manual"
+          id="codigo-facial"
           type="text"
-          value="ALU-001"
-          class="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold tracking-wider text-slate-800 outline-none placeholder:font-normal focus:border-brand-500 focus:ring-2 focus:ring-brand-200"
+          [value]="codigoAlunoFacial()"
+          (input)="codigoAlunoFacial.set($any($event.target).value)"
+          class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold tracking-wider text-slate-800 outline-none placeholder:font-normal focus:border-brand-500 focus:ring-2 focus:ring-brand-200"
           placeholder="ALU-001"
         />
-        <button
-          type="button"
-          class="rounded-lg bg-zinc-900 px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-black focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:cursor-not-allowed disabled:bg-slate-300"
-          [disabled]="processando()"
-          (click)="validarCodigoManual(codigoManual.value)"
-        >
-          Validar código
-        </button>
       </div>
-      <p class="mt-2 text-xs text-slate-500">Use ALU-001, ALU-002 ou ALU-003 para demonstração.</p>
-    </div>
+
+      <div>
+        <app-camera-foto (fotoCapturada)="validarFacial($event)" />
+      </div>
+    }
   </section>
 
   @if (processando() || resultado() || erro()) {

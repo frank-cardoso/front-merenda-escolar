@@ -12,7 +12,7 @@ const turmas: Turma[] = [
 ];
 const resumo: Aluno = {
   id: 'a-1', codigoPublico: 'ALU-1', matricula: '2026001', nome: 'Maria', ativo: true,
-  turmaVigente: null, historicoVinculos: null,
+  temRostoCadastrado: false, turmaVigente: null, historicoVinculos: null,
 };
 const detalhe: Aluno = {
   ...resumo,

@@ -111,14 +111,36 @@
               <span class="font-semibold text-slate-900">sem turma</span>
             }
           </p>
+          <p class="mt-1 text-xs">
+            Rosto cadastrado:
+            @if (aluno.temRostoCadastrado) {
+              <span class="rounded-md border border-brand-200 bg-brand-50 px-2 py-0.5 font-bold text-brand-900">sim</span>
+            } @else {
+              <span class="rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 font-bold text-slate-600">não</span>
+            }
+          </p>
         </div>
         <div class="flex items-center gap-3">
+          <button type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 px-3! text-xs!" (click)="abrirCadastroRosto()">
+            {{ aluno.temRostoCadastrado ? 'Recadastrar rosto' : 'Cadastrar rosto' }}
+          </button>
           <button type="button" class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-bold text-zinc-950 shadow-sm transition-colors hover:bg-brand-400 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 px-3! text-xs!" (click)="abrirTransferencia()">
             Transferir de turma
           </button>
           <button type="button" class="text-sm font-semibold text-slate-500 hover:text-slate-800" (click)="fecharDetalhe()">Fechar</button>
         </div>
       </div>
+
+      @if (cadastroRostoAberto()) {
+        <div class="space-y-3">
+          <p class="text-sm text-slate-600">Capture uma foto de frente, com boa luz, de {{ aluno.nome }}.</p>
+          <app-camera-foto (fotoCapturada)="cadastrarRosto($event)" />
+          @if (salvandoRosto()) {
+            <p class="text-xs text-slate-500">Enviando foto e gerando o cadastro facial...</p>
+          }
+          <button type="button" class="text-xs font-semibold text-slate-500 hover:text-slate-800" (click)="cadastroRostoAberto.set(false)">Cancelar</button>
+        </div>
+      }
 
       @if (transferenciaAberta()) {
         <app-transferencia-form

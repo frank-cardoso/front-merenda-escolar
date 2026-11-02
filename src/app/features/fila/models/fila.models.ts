@@ -4,6 +4,8 @@ export type ResultadoValidacao = 'AUTORIZADO' | 'BLOQUEADO';
 export interface ValidarConsumoRequest {
   alunoCodigo: string;
   metodoIdentificacao: MetodoIdentificacao;
+  /** Só exigido quando metodoIdentificacao é FACIAL: confirma 1:1 contra o rosto já cadastrado do aluno. */
+  fotoBase64?: string;
 }
 
 export interface ValidarConsumoResponse {

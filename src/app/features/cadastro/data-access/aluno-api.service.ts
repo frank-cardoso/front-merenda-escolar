@@ -33,4 +33,8 @@ export class AlunoApiService {
   transferir(id: string, request: TransferenciaRequest): Observable<Aluno> {
     return this.http.post<Aluno>(`${this.baseUrl}/${id}/transferencias`, request);
   }
+
+  cadastrarRosto(id: string, fotoBase64: string): Observable<Aluno> {
+    return this.http.post<Aluno>(`${this.baseUrl}/${id}/rosto`, { fotoBase64 });
+  }
 }

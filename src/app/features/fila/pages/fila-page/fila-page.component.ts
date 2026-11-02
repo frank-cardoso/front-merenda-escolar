@@ -5,11 +5,12 @@ import { QrScannerComponent } from '../../components/qr-scanner/qr-scanner.compo
 import { ResultadoValidacaoComponent } from '../../components/resultado-validacao/resultado-validacao.component';
 import { parseAlunoQrCode } from '../../application/qr-code-parser';
 import { FilaApiService } from '../../data-access/fila-api.service';
-import { ValidarConsumoResponse } from '../../models/fila.models';
+import { MetodoIdentificacao, ValidarConsumoResponse } from '../../models/fila.models';
+import { CameraFotoComponent } from '../../../../shared/components/camera-foto/camera-foto.component';
 
 @Component({
   selector: 'app-fila-page',
-  imports: [QrScannerComponent, ResultadoValidacaoComponent],
+  imports: [QrScannerComponent, ResultadoValidacaoComponent, CameraFotoComponent],
   templateUrl: './fila-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -19,6 +20,10 @@ export class FilaPageComponent {
   readonly resultado = signal<ValidarConsumoResponse | null>(null);
   readonly erro = signal<string | null>(null);
   readonly ultimoCodigoLido = signal<string | null>(null);
+
+  /** QR não exige saber quem é antes de ler; facial exige, porque é verificação 1:1, não busca. */
+  readonly metodo = signal<MetodoIdentificacao>('QR_CODE');
+  readonly codigoAlunoFacial = signal('ALU-001');
 
   /**
    * Leituras autorizadas desde que a tela abriu.
@@ -56,6 +61,37 @@ export class FilaPageComponent {
 
   validarCodigoManual(alunoCodigo: string): void {
     this.validarQr(alunoCodigo);
+  }
+
+  selecionarMetodo(metodo: MetodoIdentificacao): void {
+    if (this.metodo() === metodo) return;
+    this.metodo.set(metodo);
+    this.resultado.set(null);
+    this.erro.set(null);
+  }
+
+  validarFacial(fotoBase64: string): void {
+    if (this.processando()) return;
+    const alunoCodigo = this.codigoAlunoFacial().trim();
+    if (!alunoCodigo) {
+      this.erro.set('Informe o código do aluno antes de capturar a foto.');
+      return;
+    }
+
+    this.ultimoCodigoLido.set(alunoCodigo);
+    this.processando.set(true);
+    this.erro.set(null);
+    this.filaApi.validarConsumo({ alunoCodigo, metodoIdentificacao: 'FACIAL', fotoBase64 })
+      .pipe(finalize(() => this.processando.set(false)))
+      .subscribe({
+        next: (resultado) => {
+          this.resultado.set(resultado);
+          if (resultado.resultado === 'AUTORIZADO') {
+            this.autorizadasNaSessao.update((total) => total + 1);
+          }
+        },
+        error: (erro: HttpErrorResponse) => this.erro.set(this.montarMensagemErro(erro)),
+      });
   }
 
   private montarMensagemErro(erro: HttpErrorResponse): string {

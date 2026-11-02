@@ -31,6 +31,7 @@ export interface Aluno {
   matricula: string;
   nome: string;
   ativo: boolean;
+  temRostoCadastrado: boolean;
   turmaVigente: Vinculo | null;
   historicoVinculos: Vinculo[] | null;
 }

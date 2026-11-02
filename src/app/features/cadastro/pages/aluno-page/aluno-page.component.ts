@@ -7,10 +7,11 @@ import { TransferenciaFormComponent } from '../../components/transferencia-form/
 import { AlunoApiService } from '../../data-access/aluno-api.service';
 import { TurmaApiService } from '../../data-access/turma-api.service';
 import { Aluno, TransferenciaRequest, Turma } from '../../models/cadastro.models';
+import { CameraFotoComponent } from '../../../../shared/components/camera-foto/camera-foto.component';
 
 @Component({
   selector: 'app-aluno-page',
-  imports: [FormsModule, TransferenciaFormComponent],
+  imports: [FormsModule, TransferenciaFormComponent, CameraFotoComponent],
   templateUrl: './aluno-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -27,6 +28,8 @@ export class AlunoPageComponent implements OnInit {
   readonly transferindo = signal(false);
   readonly formularioAberto = signal(false);
   readonly transferenciaAberta = signal(false);
+  readonly cadastroRostoAberto = signal(false);
+  readonly salvandoRosto = signal(false);
   readonly erro = signal<string | null>(null);
   readonly aviso = signal<string | null>(null);
 
@@ -125,11 +128,37 @@ export class AlunoPageComponent implements OnInit {
   fecharDetalhe(): void {
     this.selecionado.set(null);
     this.transferenciaAberta.set(false);
+    this.cadastroRostoAberto.set(false);
   }
 
   abrirTransferencia(): void {
     this.limparMensagens();
     this.transferenciaAberta.set(true);
+  }
+
+  abrirCadastroRosto(): void {
+    this.limparMensagens();
+    this.cadastroRostoAberto.set(true);
+  }
+
+  /** A foto nunca é guardada aqui nem em lugar nenhum do front: segue direto para o backend virar embedding. */
+  cadastrarRosto(fotoBase64: string): void {
+    const aluno = this.selecionado();
+    if (!aluno) return;
+
+    this.salvandoRosto.set(true);
+    this.limparMensagens();
+    this.alunoApi.cadastrarRosto(aluno.id, fotoBase64)
+      .pipe(finalize(() => this.salvandoRosto.set(false)))
+      .subscribe({
+        next: (atualizado) => {
+          this.selecionado.set(atualizado);
+          this.cadastroRostoAberto.set(false);
+          this.aviso.set('Rosto cadastrado.');
+          this.carregar();
+        },
+        error: (erro: HttpErrorResponse) => this.erro.set(montarMensagemErro(erro)),
+      });
   }
 
   /** A API rejeita data anterior ao inicio do vinculo vigente e sobreposicao; a rejeicao aparece na tela. */

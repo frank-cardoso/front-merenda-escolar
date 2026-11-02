@@ -37,4 +37,9 @@ describe('ResultadoValidacaoComponent', () => {
   it('motivo desconhecido aparece como veio do backend', () => {
     expect(render({ ...base, motivo: 'OUTRO_CODIGO' })).toContain('OUTRO_CODIGO');
   });
+
+  it('traduz os motivos de bloqueio da validacao facial', () => {
+    expect(render({ ...base, motivo: 'ROSTO_NAO_CONFERE' })).toContain('não confere');
+    expect(render({ ...base, motivo: 'ALUNO_SEM_ROSTO_CADASTRADO' })).toContain('não tem rosto cadastrado');
+  });
 });

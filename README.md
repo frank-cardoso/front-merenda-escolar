@@ -43,6 +43,16 @@ Codigos mockados disponiveis no backend:
 
 A rota `/dashboard` consulta `GET /api/v1/gestao/consolidacoes` para exibir os indicadores consolidados da fila. Ao acionar a geracao do relatorio, o frontend chama `POST /api/v1/relatorios-ia` e consulta o status em `GET /api/v1/relatorios-ia/{id}` ate o processamento terminar.
 
+## Cadastro de alunos e turmas
+
+A feature `cadastro` expõe duas rotas: `/alunos` e `/turmas`.
+
+- `/turmas`: listagem, criação, edição e exclusão (`GET|POST|PUT|DELETE /api/v1/turmas`).
+- `/alunos`: listagem, criação e edição (`GET|POST|PUT /api/v1/alunos`); o detalhe
+  (`GET /api/v1/alunos/{id}`) mostra a turma vigente e o histórico de vínculos.
+- A transferência de turma é ação própria (`POST /api/v1/alunos/{id}/transferencias`, com
+  `turmaId` e `dataMudanca`), separada da edição do aluno.
+
 ## Execucao
 
 ### Dashboard de inteligência logística
@@ -111,6 +121,11 @@ src/app/
 ├── shared/
 └── features/
     ├── fila/
+    │   ├── components/
+    │   ├── data-access/
+    │   ├── models/
+    │   └── pages/
+    ├── cadastro/
     │   ├── components/
     │   ├── data-access/
     │   ├── models/

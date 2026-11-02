@@ -12,6 +12,16 @@ export const routes: Routes = [
       .then((component) => component.CardapioPageComponent),
   },
   {
+    path: 'alunos',
+    loadComponent: () => import('./features/cadastro/pages/aluno-page/aluno-page.component')
+      .then((component) => component.AlunoPageComponent),
+  },
+  {
+    path: 'turmas',
+    loadComponent: () => import('./features/cadastro/pages/turma-page/turma-page.component')
+      .then((component) => component.TurmaPageComponent),
+  },
+  {
     path: 'dashboard',
     loadComponent: () => import('./features/dashboard/pages/dashboard-page/dashboard-page.component')
       .then((component) => component.DashboardPageComponent),

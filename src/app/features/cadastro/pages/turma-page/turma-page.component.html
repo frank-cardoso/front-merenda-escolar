@@ -1,0 +1,137 @@
+<section class="space-y-6">
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <span class="inline-block rounded-md border border-brand-200 bg-brand-100 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-widest text-brand-900">Cadastro</span>
+      <h2 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">Turmas</h2>
+      <p class="mt-2 max-w-3xl text-sm text-slate-600">Turmas que recebem alunos por enturmação com vigência.</p>
+    </div>
+    <button type="button" class="inline-flex items-center gap-2 self-start rounded-lg bg-brand-500 px-4 py-2 text-sm font-bold text-zinc-950 shadow-sm transition-colors hover:bg-brand-400 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 lg:self-end" (click)="abrirNova()">
+      <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 3a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H4a1 1 0 1 1 0-2h5V4a1 1 0 0 1 1-1z"/></svg>
+      Nova turma
+    </button>
+  </div>
+
+  <div class="grid gap-4 md:grid-cols-3">
+    <div class="rounded-xl border border-slate-200 bg-surface-card shadow-sm p-5">
+      <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Total de turmas</p>
+      <p class="mt-2 flex items-baseline gap-2 text-3xl font-extrabold text-slate-900">{{ turmas().length }}</p>
+      <p class="mt-1 text-xs text-slate-500">Cadastradas no sistema</p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-surface-card shadow-sm p-5">
+      <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Capacidade planejada</p>
+      <p class="mt-2 flex items-baseline gap-2 text-3xl font-extrabold text-slate-900">{{ capacidadeTotal() }}<span class="text-sm font-medium text-slate-500">vagas</span></p>
+      <p class="mt-1 text-xs text-slate-500">Soma do máximo de alunos informado</p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-surface-card shadow-sm p-5">
+      <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Turno com mais turmas</p>
+      @if (turnoPrincipal(); as principal) {
+        <p class="mt-2 text-3xl font-extrabold text-slate-900">{{ principal.turno }}</p>
+        <p class="mt-1 text-xs text-slate-500">{{ principal.total }} de {{ turmas().length }} turmas</p>
+      } @else {
+        <p class="mt-2 text-3xl font-extrabold text-slate-900">-</p>
+        <p class="mt-1 text-xs text-slate-500">Sem turmas cadastradas</p>
+      }
+    </div>
+  </div>
+
+  @if (erro()) {
+    <div class="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-900" role="alert">
+      <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-red-500" aria-hidden="true"></span>
+      <span>{{ erro() }}</span>
+    </div>
+  }
+  @if (aviso()) {
+    <div class="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-900" role="status">
+      <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-emerald-500" aria-hidden="true"></span>
+      <span>{{ aviso() }}</span>
+    </div>
+  }
+
+  @if (formularioAberto()) {
+    <form class="space-y-4 rounded-xl border border-slate-200 bg-surface-card shadow-sm p-6" (ngSubmit)="salvar()">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-extrabold text-slate-900">{{ emEdicao() ? 'Editar turma' : 'Nova turma' }}</h3>
+        <button type="button" class="text-sm font-semibold text-slate-500 hover:text-slate-800" (click)="fecharFormulario()">Fechar</button>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <label class="text-sm font-semibold text-slate-700">
+          Código
+          <input type="text" name="codigo" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                 [ngModel]="codigo()" (ngModelChange)="codigo.set($event)" />
+        </label>
+        <label class="text-sm font-semibold text-slate-700">
+          Descrição
+          <input type="text" name="descricao" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                 [ngModel]="descricao()" (ngModelChange)="descricao.set($event)" />
+        </label>
+        <label class="text-sm font-semibold text-slate-700">
+          Turno
+          <select name="turno" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  [ngModel]="turno()" (ngModelChange)="turno.set($event)">
+            @for (item of turnos; track item) {
+              <option [value]="item">{{ item }}</option>
+            }
+          </select>
+        </label>
+        <label class="text-sm font-semibold text-slate-700">
+          Máximo de alunos
+          <input type="number" min="1" name="quantidadeMaxima" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                 [ngModel]="quantidadeMaxima()" (ngModelChange)="quantidadeMaxima.set($event)" />
+        </label>
+      </div>
+      <div class="flex justify-end gap-3">
+        <button type="button" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" (click)="fecharFormulario()">Cancelar</button>
+        <button type="submit" class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-bold text-zinc-950 shadow-sm transition-colors hover:bg-brand-400 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400" [disabled]="!formularioValido() || salvando()">
+          {{ salvando() ? 'Salvando...' : 'Salvar turma' }}
+        </button>
+      </div>
+    </form>
+  }
+
+  <div class="overflow-hidden rounded-xl border border-slate-200 bg-surface-card shadow-sm">
+    @if (carregando()) {
+      <p class="p-6 text-sm text-slate-500">Carregando turmas...</p>
+    } @else if (turmas().length === 0) {
+      <p class="p-6 text-sm text-slate-500">Nenhuma turma cadastrada. Clique em "Nova turma" para começar.</p>
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500">
+            <tr>
+              <th scope="col" class="px-5 py-3">Código</th>
+              <th scope="col" class="px-5 py-3">Descrição</th>
+              <th scope="col" class="px-5 py-3">Turno</th>
+              <th scope="col" class="px-5 py-3 text-right">Máximo</th>
+              <th scope="col" class="px-5 py-3 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (turma of turmas(); track turma.id) {
+              <tr class="hover:bg-slate-50/60">
+                <td class="px-5 py-3">
+                  <span class="rounded-md border border-brand-200 bg-brand-100 px-2 py-0.5 text-xs font-extrabold text-brand-900">{{ turma.codigo }}</span>
+                </td>
+                <td class="px-5 py-3 text-slate-900">{{ turma.descricao }}</td>
+                <td class="px-5 py-3">
+                  <span class="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-slate-700">{{ turma.turno }}</span>
+                </td>
+                <td class="px-5 py-3 text-right font-bold text-slate-900">{{ turma.quantidadeMaximaAlunos ?? '-' }}</td>
+                <td class="px-5 py-3">
+                  <div class="flex justify-end gap-2">
+                    <button type="button" class="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50" (click)="abrirEdicao(turma)">Editar</button>
+                    <button type="button"
+                            class="rounded-lg border border-red-200 bg-white px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50"
+                            (click)="excluir(turma)">Excluir</button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="border-t border-slate-200 px-5 py-3 text-xs text-slate-500">
+        Exibindo <strong class="text-slate-800">{{ turmas().length }}</strong> turmas cadastradas
+      </div>
+    }
+  </div>
+</section>

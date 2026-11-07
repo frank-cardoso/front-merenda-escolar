@@ -6,6 +6,7 @@ import { CardapioApiService } from '../../../cardapio/data-access/cardapio-api.s
 import { Turno } from '../../../cardapio/models/cardapio.models';
 import { DashboardApiService } from '../../../dashboard/data-access/dashboard-api.service';
 import { FechamentoApiService } from '../../data-access/fechamento-api.service';
+import { NotificacaoService } from '../../../../shared/notificacao/notificacao.service';
 import { LinhaFechamento } from '../../models/fechamento.models';
 
 /**
@@ -25,6 +26,7 @@ import { LinhaFechamento } from '../../models/fechamento.models';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class FechamentoPageComponent implements OnInit {
+  private readonly notificacao = inject(NotificacaoService);
   private readonly cardapioApi = inject(CardapioApiService);
   private readonly dashboardApi = inject(DashboardApiService);
   private readonly fechamentoApi = inject(FechamentoApiService);
@@ -39,7 +41,6 @@ export default class FechamentoPageComponent implements OnInit {
   readonly medicoesExistentes = signal(0);
   readonly carregando = signal(false);
   readonly fechando = signal(false);
-  readonly erro = signal<string | null>(null);
   readonly aviso = signal<string | null>(null);
   readonly relatorioId = signal<string | null>(null);
 
@@ -56,7 +57,6 @@ export default class FechamentoPageComponent implements OnInit {
 
   carregar(): void {
     this.carregando.set(true);
-    this.erro.set(null);
     this.aviso.set(null);
     this.relatorioId.set(null);
     this.linhas.set([]);
@@ -87,7 +87,7 @@ export default class FechamentoPageComponent implements OnInit {
             nome: item.nome,
           })));
         },
-        error: (erro: HttpErrorResponse) => this.erro.set(this.mensagem(erro)),
+        error: (erro: HttpErrorResponse) => this.notificacao.erro(this.mensagem(erro)),
       });
   }
 
@@ -117,10 +117,10 @@ export default class FechamentoPageComponent implements OnInit {
               } : linha;
             }));
           },
-          error: (erro: HttpErrorResponse) => this.erro.set(this.mensagem(erro)),
+          error: (erro: HttpErrorResponse) => this.notificacao.erro(this.mensagem(erro)),
         });
       },
-      error: (erro: HttpErrorResponse) => this.erro.set(this.mensagem(erro)),
+      error: (erro: HttpErrorResponse) => this.notificacao.erro(this.mensagem(erro)),
     });
   }
 
@@ -156,7 +156,6 @@ export default class FechamentoPageComponent implements OnInit {
     if (!this.podeFechar() || this.fechando()) return;
 
     this.fechando.set(true);
-    this.erro.set(null);
     this.relatorioId.set(null);
 
     const data = this.data();
@@ -174,8 +173,12 @@ export default class FechamentoPageComponent implements OnInit {
       switchMap(() => this.dashboardApi.criarRelatorio({ dataReferencia: data, turno })),
       finalize(() => this.fechando.set(false)),
     ).subscribe({
-      next: (resposta) => this.relatorioId.set(resposta.relatorioId),
-      error: (erro: HttpErrorResponse) => this.erro.set(this.mensagem(erro)),
+      next: (resposta) => {
+        this.relatorioId.set(resposta.relatorioId);
+        this.notificacao.sucesso('Turno fechado e relatório solicitado. Acompanhe no Dashboard — aceitação e '
+          + 'desperdício passam a ser calculados a partir do que foi registrado aqui.');
+      },
+      error: (erro: HttpErrorResponse) => this.notificacao.erro(this.mensagem(erro)),
     });
   }
 

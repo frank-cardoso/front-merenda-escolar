@@ -1,0 +1,57 @@
+<div data-regiao="destaque" class="pointer-events-none fixed inset-x-0 top-20 z-50 flex justify-center px-4">
+  @for (n of destaques(); track n.id) {
+    <div class="destaque-entrada pointer-events-auto relative w-full max-w-xl overflow-hidden rounded-2xl text-white shadow-2xl ring-1 ring-black/10"
+         [class.bg-emerald-600]="n.tipo === 'sucesso'"
+         [class.bg-red-600]="n.tipo === 'erro'"
+         [attr.role]="n.tipo === 'erro' ? 'alert' : 'status'"
+         [attr.aria-live]="n.tipo === 'erro' ? 'assertive' : 'polite'">
+      <div class="flex items-center gap-4 px-5 py-4 sm:gap-5 sm:px-6 sm:py-5">
+        <div class="grid size-14 shrink-0 place-items-center rounded-full bg-white/20" aria-hidden="true">
+          @if (n.tipo === 'sucesso') {
+            <svg class="size-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"></path></svg>
+          } @else {
+            <svg class="size-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"></path></svg>
+          }
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-extrabold uppercase tracking-[0.25em] text-white/80">{{ n.selo }}</p>
+          <p class="mt-0.5 break-words text-2xl font-black leading-tight tracking-tight sm:text-3xl">{{ n.titulo }}</p>
+          @if (n.detalhe) {
+            <p class="mt-1 text-sm font-semibold text-white/90">{{ n.detalhe }}</p>
+          }
+        </div>
+        <button type="button" aria-label="Fechar notificação"
+                class="shrink-0 self-start rounded-lg p-1.5 text-white/80 hover:bg-white/15 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/70"
+                (click)="servico.fechar(n.id)">
+          <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path></svg>
+        </button>
+      </div>
+      <div class="destaque-tempo h-1 bg-white/40" aria-hidden="true"></div>
+    </div>
+  }
+</div>
+
+<div data-regiao="simples" class="pointer-events-none fixed right-4 top-20 z-40 flex w-[calc(100%-2rem)] max-w-sm flex-col gap-3 sm:right-6">
+  @for (n of servico.simples(); track n.id) {
+    <div class="pointer-events-auto flex items-start gap-3 rounded-xl border p-4 shadow-lg"
+         [class.bg-emerald-50]="n.tipo === 'sucesso'"
+         [class.text-emerald-950]="n.tipo === 'sucesso'"
+         [class.border-emerald-200]="n.tipo === 'sucesso'"
+         [class.bg-red-50]="n.tipo === 'erro'"
+         [class.text-red-950]="n.tipo === 'erro'"
+         [class.border-red-200]="n.tipo === 'erro'"
+         [attr.role]="n.tipo === 'erro' ? 'alert' : 'status'"
+         [attr.aria-live]="n.tipo === 'erro' ? 'assertive' : 'polite'">
+      <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+            [class.bg-emerald-500]="n.tipo === 'sucesso'"
+            [class.bg-red-500]="n.tipo === 'erro'"
+            aria-hidden="true"></span>
+      <p class="min-w-0 flex-1 break-words text-sm font-semibold">{{ n.mensagem }}</p>
+      <button type="button" aria-label="Fechar notificação"
+              class="-m-1 shrink-0 rounded-lg p-1 opacity-70 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-brand-300"
+              (click)="servico.fechar(n.id)">
+        <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path></svg>
+      </button>
+    </div>
+  }
+</div>

@@ -34,59 +34,44 @@
     </div>
   </div>
 
-  @if (erro()) {
-    <div class="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-900" role="alert">
-      <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-red-500" aria-hidden="true"></span>
-      <span>{{ erro() }}</span>
-    </div>
-  }
-  @if (aviso()) {
-    <div class="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-900" role="status">
-      <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-emerald-500" aria-hidden="true"></span>
-      <span>{{ aviso() }}</span>
-    </div>
-  }
-
-  @if (formularioAberto()) {
-    <form class="space-y-4 rounded-xl border border-slate-200 bg-surface-card shadow-sm p-6" (ngSubmit)="salvar()">
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-extrabold text-slate-900">{{ emEdicao() ? 'Editar turma' : 'Nova turma' }}</h3>
-        <button type="button" class="text-sm font-semibold text-slate-500 hover:text-slate-800" (click)="fecharFormulario()">Fechar</button>
-      </div>
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <label class="text-sm font-semibold text-slate-700">
-          Código
-          <input type="text" name="codigo" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                 [ngModel]="codigo()" (ngModelChange)="codigo.set($event)" />
-        </label>
-        <label class="text-sm font-semibold text-slate-700">
-          Descrição
-          <input type="text" name="descricao" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                 [ngModel]="descricao()" (ngModelChange)="descricao.set($event)" />
-        </label>
-        <label class="text-sm font-semibold text-slate-700">
-          Turno
-          <select name="turno" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                  [ngModel]="turno()" (ngModelChange)="turno.set($event)">
-            @for (item of turnos; track item) {
-              <option [value]="item">{{ item }}</option>
-            }
-          </select>
-        </label>
-        <label class="text-sm font-semibold text-slate-700">
-          Máximo de alunos
-          <input type="number" min="1" name="quantidadeMaxima" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                 [ngModel]="quantidadeMaxima()" (ngModelChange)="quantidadeMaxima.set($event)" />
-        </label>
-      </div>
-      <div class="flex justify-end gap-3">
-        <button type="button" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" (click)="fecharFormulario()">Cancelar</button>
-        <button type="submit" class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-bold text-zinc-950 shadow-sm transition-colors hover:bg-brand-400 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400" [disabled]="!formularioValido() || salvando()">
-          {{ salvando() ? 'Salvando...' : 'Salvar turma' }}
-        </button>
-      </div>
-    </form>
-  }
+  <app-modal [aberto]="formularioAberto()" [titulo]="emEdicao() ? 'Editar turma' : 'Nova turma'" (fechar)="fecharFormulario()">
+    @if (formularioAberto()) {
+      <form class="space-y-4" (ngSubmit)="salvar()">
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="text-sm font-semibold text-slate-700">
+            Código
+            <input type="text" name="codigo" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                   [ngModel]="codigo()" (ngModelChange)="codigo.set($event)" />
+          </label>
+          <label class="text-sm font-semibold text-slate-700">
+            Descrição
+            <input type="text" name="descricao" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                   [ngModel]="descricao()" (ngModelChange)="descricao.set($event)" />
+          </label>
+          <label class="text-sm font-semibold text-slate-700">
+            Turno
+            <select name="turno" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                    [ngModel]="turno()" (ngModelChange)="turno.set($event)">
+              @for (item of turnos; track item) {
+                <option [value]="item">{{ item }}</option>
+              }
+            </select>
+          </label>
+          <label class="text-sm font-semibold text-slate-700">
+            Máximo de alunos
+            <input type="number" min="1" name="quantidadeMaxima" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                   [ngModel]="quantidadeMaxima()" (ngModelChange)="quantidadeMaxima.set($event)" />
+          </label>
+        </div>
+        <div class="flex justify-end gap-3">
+          <button type="button" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" (click)="fecharFormulario()">Cancelar</button>
+          <button type="submit" class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-bold text-zinc-950 shadow-sm transition-colors hover:bg-brand-400 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400" [disabled]="!formularioValido() || salvando()">
+            {{ salvando() ? 'Salvando...' : 'Salvar turma' }}
+          </button>
+        </div>
+      </form>
+    }
+  </app-modal>
 
   <div class="overflow-hidden rounded-xl border border-slate-200 bg-surface-card shadow-sm">
     @if (carregando()) {

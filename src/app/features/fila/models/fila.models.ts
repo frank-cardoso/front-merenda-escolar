@@ -2,9 +2,10 @@ export type MetodoIdentificacao = 'QR_CODE' | 'FACIAL';
 export type ResultadoValidacao = 'AUTORIZADO' | 'BLOQUEADO';
 
 export interface ValidarConsumoRequest {
-  alunoCodigo: string;
+  /** Obrigatório no QR_CODE; no FACIAL a API ignora, pois identifica o aluno pelo rosto. */
+  alunoCodigo?: string;
   metodoIdentificacao: MetodoIdentificacao;
-  /** Só exigido quando metodoIdentificacao é FACIAL: confirma 1:1 contra o rosto já cadastrado do aluno. */
+  /** Só exigido quando metodoIdentificacao é FACIAL: a API procura o rosto entre todos os alunos cadastrados. */
   fotoBase64?: string;
 }
 

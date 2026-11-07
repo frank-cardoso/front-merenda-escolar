@@ -2,20 +2,23 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
+import { NotificacaoService } from '../../../../shared/notificacao/notificacao.service';
 import { montarMensagemErro } from '../../application/mensagem-erro';
 import { TransferenciaFormComponent } from '../../components/transferencia-form/transferencia-form.component';
 import { AlunoApiService } from '../../data-access/aluno-api.service';
 import { TurmaApiService } from '../../data-access/turma-api.service';
 import { Aluno, TransferenciaRequest, Turma } from '../../models/cadastro.models';
+import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { CameraFotoComponent } from '../../../../shared/components/camera-foto/camera-foto.component';
 
 @Component({
   selector: 'app-aluno-page',
-  imports: [FormsModule, TransferenciaFormComponent, CameraFotoComponent],
+  imports: [FormsModule, TransferenciaFormComponent, CameraFotoComponent, ModalComponent],
   templateUrl: './aluno-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AlunoPageComponent implements OnInit {
+  private readonly notificacao = inject(NotificacaoService);
   private readonly alunoApi = inject(AlunoApiService);
   private readonly turmaApi = inject(TurmaApiService);
 
@@ -30,8 +33,6 @@ export class AlunoPageComponent implements OnInit {
   readonly transferenciaAberta = signal(false);
   readonly cadastroRostoAberto = signal(false);
   readonly salvandoRosto = signal(false);
-  readonly erro = signal<string | null>(null);
-  readonly aviso = signal<string | null>(null);
 
   readonly emEdicao = signal<Aluno | null>(null);
   readonly codigoPublico = signal('');
@@ -52,7 +53,7 @@ export class AlunoPageComponent implements OnInit {
     this.carregar();
     this.turmaApi.listar().subscribe({
       next: (turmas) => this.turmas.set(turmas),
-      error: (erro: HttpErrorResponse) => this.erro.set(montarMensagemErro(erro)),
+      error: (erro: HttpErrorResponse) => this.notificacao.erro(montarMensagemErro(erro)),
     });
   }
 
@@ -62,7 +63,7 @@ export class AlunoPageComponent implements OnInit {
       .pipe(finalize(() => this.carregando.set(false)))
       .subscribe({
         next: (alunos) => this.alunos.set(alunos),
-        error: (erro: HttpErrorResponse) => this.erro.set(montarMensagemErro(erro)),
+        error: (erro: HttpErrorResponse) => this.notificacao.erro(montarMensagemErro(erro)),
       });
   }
 
@@ -104,24 +105,25 @@ export class AlunoPageComponent implements OnInit {
       });
 
     this.salvando.set(true);
-    this.limparMensagens();
     operacao.pipe(finalize(() => this.salvando.set(false))).subscribe({
       next: (aluno) => {
-        this.aviso.set(emEdicao ? 'Aluno atualizado.' : 'Aluno cadastrado.');
+        this.notificacao.sucesso(emEdicao ? 'Aluno atualizado.' : 'Aluno cadastrado.');
         this.fecharFormulario();
         this.carregar();
         if (this.selecionado()?.id === aluno.id) this.selecionado.set(aluno);
       },
-      error: (erro: HttpErrorResponse) => this.erro.set(montarMensagemErro(erro)),
+      error: (erro: HttpErrorResponse) => this.notificacao.erro(montarMensagemErro(erro)),
     });
   }
 
-  verHistorico(aluno: Aluno): void {
-    this.limparMensagens();
+  verHistorico(aluno: Aluno, cadastrarRosto = false): void {
     this.transferenciaAberta.set(false);
     this.alunoApi.detalhar(aluno.id).subscribe({
-      next: (detalhe) => this.selecionado.set(detalhe),
-      error: (erro: HttpErrorResponse) => this.erro.set(montarMensagemErro(erro)),
+      next: (detalhe) => {
+        this.selecionado.set(detalhe);
+        this.cadastroRostoAberto.set(cadastrarRosto);
+      },
+      error: (erro: HttpErrorResponse) => this.notificacao.erro(montarMensagemErro(erro)),
     });
   }
 
@@ -132,12 +134,10 @@ export class AlunoPageComponent implements OnInit {
   }
 
   abrirTransferencia(): void {
-    this.limparMensagens();
     this.transferenciaAberta.set(true);
   }
 
   abrirCadastroRosto(): void {
-    this.limparMensagens();
     this.cadastroRostoAberto.set(true);
   }
 
@@ -147,17 +147,16 @@ export class AlunoPageComponent implements OnInit {
     if (!aluno) return;
 
     this.salvandoRosto.set(true);
-    this.limparMensagens();
     this.alunoApi.cadastrarRosto(aluno.id, fotoBase64)
       .pipe(finalize(() => this.salvandoRosto.set(false)))
       .subscribe({
         next: (atualizado) => {
           this.selecionado.set(atualizado);
           this.cadastroRostoAberto.set(false);
-          this.aviso.set('Rosto cadastrado.');
+          this.notificacao.sucesso('Rosto cadastrado.');
           this.carregar();
         },
-        error: (erro: HttpErrorResponse) => this.erro.set(montarMensagemErro(erro)),
+        error: (erro: HttpErrorResponse) => this.notificacao.erro(montarMensagemErro(erro)),
       });
   }
 
@@ -167,16 +166,15 @@ export class AlunoPageComponent implements OnInit {
     if (!aluno) return;
 
     this.transferindo.set(true);
-    this.limparMensagens();
     this.alunoApi.transferir(aluno.id, request)
       .pipe(finalize(() => this.transferindo.set(false)))
       .subscribe({
         next: (detalhe) => {
           this.selecionado.set(detalhe);
           this.transferenciaAberta.set(false);
-          this.aviso.set('Transferência registrada.');
+          this.notificacao.sucesso('Transferência registrada.');
         },
-        error: (erro: HttpErrorResponse) => this.erro.set(montarMensagemErro(erro)),
+        error: (erro: HttpErrorResponse) => this.notificacao.erro(montarMensagemErro(erro)),
       });
   }
 
@@ -188,11 +186,5 @@ export class AlunoPageComponent implements OnInit {
     this.ativo.set(aluno?.ativo ?? true);
     this.turmaInicialId.set('');
     this.dataInicio.set('');
-    this.limparMensagens();
-  }
-
-  private limparMensagens(): void {
-    this.erro.set(null);
-    this.aviso.set(null);
   }
 }

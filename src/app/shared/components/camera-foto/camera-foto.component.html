@@ -39,14 +39,26 @@
         (click)="pararCamera()">
         Parar câmera
       </button>
+      <button type="button"
+        class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-300"
+        (click)="seletor.click()">
+        Usar imagem
+      </button>
     } @else {
       <button type="button"
-        class="rounded-lg border border-zinc-700 bg-zinc-900 px-5 py-2.5 text-sm font-bold text-brand-400 shadow-sm hover:bg-black focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-300 disabled:text-slate-500 sm:col-span-2"
+        class="rounded-lg border border-zinc-700 bg-zinc-900 px-5 py-2.5 text-sm font-bold text-brand-400 shadow-sm hover:bg-black focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-300 disabled:text-slate-500"
         [disabled]="estado() === 'carregando'"
         (click)="iniciarCamera()">
         {{ estado() === 'carregando' ? 'Aguarde...' : 'Iniciar câmera' }}
       </button>
+      <button type="button"
+        class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-300"
+        (click)="seletor.click()">
+        Usar imagem
+      </button>
     }
+
+    <input #seletor type="file" accept="image/jpeg,image/png" class="hidden" aria-label="Escolher imagem do rosto" (change)="carregarImagem($event)" />
   </div>
 
   @if (ultimaFoto(); as foto) {

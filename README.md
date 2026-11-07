@@ -92,7 +92,8 @@ Não há script de lint nem formatador instalado. O `package.json` traz apenas a
   pnpm test --watch=false --browsers=ChromeHeadless
   ```
 
-- Há 10 arquivos `*.spec.ts`: `app.spec.ts`; `qr-code-parser`, `qr-scanner` e `resultado-validacao` (fila); `aluno-page` e `transferencia-form` (cadastro); `cardapio-form` (cardápio); `dashboard-page` e `indicadores-logisticos` (dashboard); `fechamento-page` (fechamento). Ainda sem spec: `fila-page`, `camera-foto`, `turma-page` e `cardapio-page`.
+- Há 12 arquivos `*.spec.ts`: `app.spec.ts`; `qr-code-parser`, `qr-scanner`, `resultado-validacao` e `fila-page` (fila); `aluno-page` e `transferencia-form` (cadastro); `cardapio-form` (cardápio); `dashboard-page` e `indicadores-logisticos` (dashboard); `fechamento-page` (fechamento); `camera-foto` (componente compartilhado, inclusive o "Usar imagem"). Ainda sem spec: `turma-page` e `cardapio-page`.
+- **Chrome sem sandbox.** Em máquina onde o Chrome não consegue abrir o sandbox (por exemplo, sem permissão para user namespaces), o Karma falha ao iniciar o navegador. Aponte `CHROME_BIN` para um script que chame o Chrome com `--no-sandbox`, ou use um launcher customizado com essa flag; só em máquina de desenvolvimento.
 
 ## Mapa do código
 
@@ -147,7 +148,7 @@ Definidas em `src/app/app.routes.ts`. Todas carregam o componente sob demanda. O
 
 ## Fila: QR Code e reconhecimento facial
 
-A tela `/fila` tem um seletor **QR Code / Reconhecimento facial**. Trocar o modo limpa o resultado e o erro exibidos. Os dois modos terminam na mesma chamada, `POST /api/v1/fila/validacoes`, com `alunoCodigo` e `metodoIdentificacao` (`QR_CODE` ou `FACIAL`); no modo facial vai também `fotoBase64`. Autorização, bloqueio de consumo repetido e auditoria são responsabilidades exclusivas da API.
+A tela `/fila` tem um seletor **QR Code / Reconhecimento facial**. Trocar o modo limpa o resultado e o erro exibidos. Os dois modos terminam na mesma chamada, `POST /api/v1/fila/validacoes`, com `metodoIdentificacao` (`QR_CODE` ou `FACIAL`): no QR Code vai o `alunoCodigo`; no modo facial vai só a `fotoBase64`, sem código. Autorização, bloqueio de consumo repetido e auditoria são responsabilidades exclusivas da API.
 
 A resposta traz `resultado` (`AUTORIZADO` ou `BLOQUEADO`), `sinal` (`VERDE` ou `VERMELHO`), nome do aluno, turno, cardápio e `motivo`. A tela também mostra quantas leituras foram autorizadas desde que foi aberta; é a contagem da sessão, não o total do dia.
 
@@ -188,11 +189,13 @@ A API cria três alunos ao subir com a tabela de alunos vazia (`DadosIniciaisCon
 | `ALU-002` | Bruno Lima |
 | `ALU-003` | Carla Santos |
 
-### Modo reconhecimento facial (verificação 1:1)
+### Modo reconhecimento facial (identificação 1:N)
 
-Hoje o modo facial **não descobre sozinho quem é o aluno**. O operador informa o código do aluno (o campo já vem com `ALU-001`), inicia a câmera e captura a foto. Cada captura dispara uma validação com o código e a foto, e a API confere 1:1 se o rosto bate com o cadastrado **daquele** aluno, sem procurar entre os demais. O cálculo facial é feito pelo analytics (DeepFace), chamado pela API.
+O modo facial **descobre quem é o aluno pela foto**: não há campo de código. O operador inicia a câmera e captura, ou escolhe uma imagem com **Usar imagem**, e cada foto dispara uma validação só com `fotoBase64`. A API identifica o aluno entre todos os que têm rosto cadastrado e o card de resultado mostra o nome de quem foi reconhecido. O cálculo facial é feito pelo analytics (DeepFace), chamado pela API; o front só captura e envia.
 
-Sem código informado, a tela recusa localmente com "Informe o código do aluno antes de capturar a foto.". Um aluno precisa ter o rosto cadastrado em `/alunos` antes de ser validado por este modo.
+Para o modo funcionar, os alunos precisam ter rosto cadastrado em `/alunos` (os cinco alunos de exemplo `ALU-9001` a `ALU-9005` já vêm com rosto; ver o roteiro da demonstração no README da API). Se o reconhecimento falha, o card fica vermelho com o motivo e orienta usar o QR Code.
+
+**Usar imagem.** O componente de câmera tem o botão **Usar imagem**, que abre um seletor de arquivo e aceita só JPG e PNG. A imagem vira data URL e segue o mesmo caminho da foto capturada. Outro tipo de arquivo (PDF, texto) mostra "Escolha um arquivo de imagem (JPG ou PNG)." e nada é enviado. Serve para demonstrar sem webcam e para repetir um teste com a mesma imagem. Foto de foto mostrada à câmera também é aceita: não há prova de vida.
 
 #### Motivos de bloqueio
 
@@ -204,15 +207,17 @@ A API devolve um código em `motivo`; `fila/components/resultado-validacao/resul
 | `ALUNO_NAO_ENCONTRADO_OU_INATIVO` | Aluno não encontrado ou inativo. |
 | `CARDAPIO_NAO_CONFIGURADO` | Cardápio não configurado. |
 | `FOTO_NAO_INFORMADA` | Nenhuma foto foi capturada para a validação facial. |
-| `ALUNO_SEM_ROSTO_CADASTRADO` | Este aluno ainda não tem rosto cadastrado. |
 | `ROSTO_NAO_DETECTADO` | Não foi possível detectar um rosto na foto capturada. |
-| `ROSTO_NAO_CONFERE` | O rosto capturado não confere com o cadastrado para este aluno. |
+| `ROSTO_NAO_RECONHECIDO` | Rosto não reconhecido entre os alunos cadastrados. Use o QR Code. |
+| `ROSTO_AMBIGUO` | Rosto parecido com mais de um aluno. Use o QR Code para confirmar. |
+| `NENHUM_ROSTO_CADASTRADO` | Nenhum aluno tem rosto cadastrado ainda. Use o QR Code. |
+| `RECONHECIMENTO_FACIAL_INDISPONIVEL` | Reconhecimento facial indisponível no momento. Use o QR Code. |
 
 A janela de bloqueio por repetição é configurada na API; o front não fixa esse número.
 
 ### Componente de câmera compartilhado
 
-`shared/components/camera-foto` é usado na fila (modo facial) e no cadastro de rosto do aluno.
+`shared/components/camera-foto` é usado na fila (modo facial) e no cadastro de rosto do aluno, e nos dois lugares oferece **Iniciar câmera**/**Capturar foto** e **Usar imagem** (JPG ou PNG). Emite a foto como data URL pelo output `fotoCapturada`.
 
 - A câmera só é acionada pelo botão **Iniciar câmera**, nunca ao abrir a tela, para o pedido de permissão do navegador não aparecer antes de a pessoa entender o que está acontecendo.
 - Usa `navigator.mediaDevices.getUserMedia` com a câmera frontal (`facingMode: 'user'`) e sem áudio.
@@ -231,7 +236,7 @@ A feature `cadastro` expõe duas rotas: `/alunos` e `/turmas`.
 - `/turmas`: listagem, criação, edição e exclusão (`GET|POST|PUT|DELETE /api/v1/turmas`).
 - `/alunos`: listagem, criação e edição (`GET|POST|PUT /api/v1/alunos`). O detalhe (`GET /api/v1/alunos/{id}`) mostra a turma vigente e o histórico de vínculos. Na criação, turma inicial e data de início são opcionais, mas precisam vir juntas.
 - A transferência de turma é ação própria (`POST /api/v1/alunos/{id}/transferencias`, com `turmaId` e `dataMudanca`), separada da edição do aluno. A API rejeita data anterior ao início do vínculo vigente e sobreposição; a rejeição aparece na tela.
-- **Cadastrar rosto:** no detalhe do aluno aparece "Rosto cadastrado: sim/não" e o botão **Cadastrar rosto** (ou **Recadastrar rosto**). A foto capturada vai para `POST /api/v1/alunos/{id}/rosto` com `{ fotoBase64 }`; a API devolve o aluno atualizado com `temRostoCadastrado`.
+- **Cadastrar rosto:** no detalhe do aluno aparece "Rosto cadastrado: sim/não" e o botão **Cadastrar rosto** (ou **Recadastrar rosto**). A foto, capturada ou escolhida por **Usar imagem**, vai para `POST /api/v1/alunos/{id}/rosto` com `{ fotoBase64 }`; a API devolve o aluno atualizado com `temRostoCadastrado`. Se o mesmo rosto já pertence a outro aluno ativo, a API responde 409 e a tela mostra "Este rosto já está cadastrado para o aluno <código> (<nome>)."; analytics fora do ar devolve 503.
 - Erros de regra de negócio (409 de turma em uso, 400 de validação, transferência rejeitada) aparecem com o `detail` devolvido pela API (`cadastro/application/mensagem-erro.ts`).
 
 ## Cardápios
@@ -369,4 +374,4 @@ O `face-api.js` foi removido (estava declarado e nunca foi usado). O reconhecime
 - Definir como a interface deve sinalizar que um relatório antigo pode ficar desatualizado após a edição de um fechamento.
 - Revisar textos e rótulos do dashboard após a entrada de dados reais e feedback dos usuários.
 - Avaliar filtros de período também na análise IA, mantendo a seleção do cardápio como escopo principal.
-- Identificação facial 1:N (sem digitar código) e rostos de demonstração, em desenho.
+- Sem prova de vida no modo facial e sem restrição da busca à escola; ver `DECISOES-TECNICAS.md` da API, seção 8.

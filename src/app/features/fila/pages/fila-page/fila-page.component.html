@@ -1,8 +1,8 @@
 <div
   class="mx-auto grid w-full gap-6 lg:items-start"
-  [class.max-w-2xl]="!processando() && !resultado() && !erro()"
-  [class.max-w-5xl]="processando() || resultado() || erro()"
-  [class.lg:grid-cols-[minmax(0,1fr)_360px]]="processando() || resultado() || erro()"
+  [class.max-w-2xl]="!processando()"
+  [class.max-w-5xl]="processando()"
+  [class.lg:grid-cols-[minmax(0,1fr)_360px]]="processando()"
 >
   <section class="space-y-6">
     <div>
@@ -59,20 +59,7 @@
         <p class="mt-2 text-xs text-slate-500">Use ALU-001, ALU-002 ou ALU-003 para demonstração.</p>
       </div>
     } @else {
-      <div class="rounded-2xl border border-slate-200 bg-surface-card p-5 shadow-sm sm:p-6">
-        <label class="block text-sm font-bold text-slate-900" for="codigo-facial">
-          Código do aluno
-        </label>
-        <p class="mt-1 text-xs text-slate-500">Confirma 1:1 contra o rosto já cadastrado desse aluno — não busca entre todos.</p>
-        <input
-          id="codigo-facial"
-          type="text"
-          [value]="codigoAlunoFacial()"
-          (input)="codigoAlunoFacial.set($any($event.target).value)"
-          class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold tracking-wider text-slate-800 outline-none placeholder:font-normal focus:border-brand-500 focus:ring-2 focus:ring-brand-200"
-          placeholder="ALU-001"
-        />
-      </div>
+      <p class="text-sm text-slate-600">O sistema procura o rosto entre os alunos cadastrados. Se não reconhecer, use o QR Code.</p>
 
       <div>
         <app-camera-foto (fotoCapturada)="validarFacial($event)" />
@@ -80,18 +67,14 @@
     }
   </section>
 
-  @if (processando() || resultado() || erro()) {
+  @if (processando()) {
   <aside class="space-y-4 lg:sticky lg:top-6">
-    @if (processando()) {
-      <div class="rounded-2xl border border-brand-200 bg-brand-50 p-8 text-center font-semibold text-brand-900" role="status">
-        @if (ultimoCodigoLido()) {
-          <span class="block text-sm text-brand-800">QR lido: {{ ultimoCodigoLido() }}</span>
-        }
-        <span class="mt-1 block">Validando consumo...</span>
-      </div>
-    }
-    @if (resultado(); as validacao) { <app-resultado-validacao [resultado]="validacao" /> }
-    @if (erro()) { <div class="rounded-2xl border border-red-300 bg-red-50 p-6 font-semibold text-red-900" role="alert">{{ erro() }}</div> }
+    <div class="rounded-2xl border border-brand-200 bg-brand-50 p-8 text-center font-semibold text-brand-900" role="status">
+      @if (ultimoCodigoLido()) {
+        <span class="block text-sm text-brand-800">QR lido: {{ ultimoCodigoLido() }}</span>
+      }
+      <span class="mt-1 block">Validando consumo...</span>
+    </div>
   </aside>
   }
 </div>

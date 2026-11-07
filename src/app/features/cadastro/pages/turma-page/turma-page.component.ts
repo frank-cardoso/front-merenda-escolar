@@ -2,17 +2,20 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
+import { NotificacaoService } from '../../../../shared/notificacao/notificacao.service';
+import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { montarMensagemErro } from '../../application/mensagem-erro';
 import { TurmaApiService } from '../../data-access/turma-api.service';
 import { Turma, TurmaRequest, Turno } from '../../models/cadastro.models';
 
 @Component({
   selector: 'app-turma-page',
-  imports: [FormsModule],
+  imports: [FormsModule, ModalComponent],
   templateUrl: './turma-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TurmaPageComponent implements OnInit {
+  private readonly notificacao = inject(NotificacaoService);
   private readonly turmaApi = inject(TurmaApiService);
 
   readonly turnos: Turno[] = ['MANHA', 'TARDE', 'NOITE', 'INTEGRAL'];
@@ -22,8 +25,6 @@ export class TurmaPageComponent implements OnInit {
   readonly salvando = signal(false);
   readonly emEdicao = signal<Turma | null>(null);
   readonly formularioAberto = signal(false);
-  readonly erro = signal<string | null>(null);
-  readonly aviso = signal<string | null>(null);
 
   readonly codigo = signal('');
   readonly descricao = signal('');
@@ -52,7 +53,7 @@ export class TurmaPageComponent implements OnInit {
       .pipe(finalize(() => this.carregando.set(false)))
       .subscribe({
         next: (turmas) => this.turmas.set(turmas),
-        error: (erro: HttpErrorResponse) => this.erro.set(montarMensagemErro(erro)),
+        error: (erro: HttpErrorResponse) => this.notificacao.erro(montarMensagemErro(erro)),
       });
   }
 
@@ -90,14 +91,13 @@ export class TurmaPageComponent implements OnInit {
       : this.turmaApi.criar(request);
 
     this.salvando.set(true);
-    this.limparMensagens();
     operacao.pipe(finalize(() => this.salvando.set(false))).subscribe({
       next: () => {
-        this.aviso.set(emEdicao ? 'Turma atualizada.' : 'Turma cadastrada.');
+        this.notificacao.sucesso(emEdicao ? 'Turma atualizada.' : 'Turma cadastrada.');
         this.fecharFormulario();
         this.carregar();
       },
-      error: (erro: HttpErrorResponse) => this.erro.set(montarMensagemErro(erro)),
+      error: (erro: HttpErrorResponse) => this.notificacao.erro(montarMensagemErro(erro)),
     });
   }
 
@@ -105,13 +105,12 @@ export class TurmaPageComponent implements OnInit {
   excluir(turma: Turma): void {
     if (!confirm(`Excluir a turma "${turma.codigo}"?`)) return;
 
-    this.limparMensagens();
     this.turmaApi.excluir(turma.id).subscribe({
       next: () => {
-        this.aviso.set('Turma excluída.');
+        this.notificacao.sucesso('Turma excluída.');
         this.carregar();
       },
-      error: (erro: HttpErrorResponse) => this.erro.set(montarMensagemErro(erro)),
+      error: (erro: HttpErrorResponse) => this.notificacao.erro(montarMensagemErro(erro)),
     });
   }
 
@@ -121,11 +120,5 @@ export class TurmaPageComponent implements OnInit {
     this.descricao.set(turma?.descricao ?? '');
     this.turno.set(turma?.turno ?? 'MANHA');
     this.quantidadeMaxima.set(turma?.quantidadeMaximaAlunos ?? null);
-    this.limparMensagens();
-  }
-
-  private limparMensagens(): void {
-    this.erro.set(null);
-    this.aviso.set(null);
   }
 }

@@ -34,7 +34,6 @@ export class CardapioFormComponent {
   readonly quantidadePlanejada = signal(0);
   readonly itens = signal<ItemCardapio[]>([this.itemVazio()]);
 
-  readonly editando = computed(() => this.cardapio() !== null);
   readonly formularioValido = computed(() =>
     this.nomeRefeicao().trim().length > 0
     && this.quantidadePlanejada() >= 0

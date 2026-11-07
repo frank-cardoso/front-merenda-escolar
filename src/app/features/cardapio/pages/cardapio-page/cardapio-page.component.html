@@ -21,29 +21,24 @@
     </button>
   </div>
 
-  @if (erro()) {
-    <div class="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-900" role="alert">
-      <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-red-500" aria-hidden="true"></span>
-      <span>{{ erro() }}</span>
-    </div>
-  }
-
-  @if (aviso()) {
+  @if (catalogoIndisponivel()) {
     <div class="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-900" role="status">
       <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-emerald-500" aria-hidden="true"></span>
-      <span>{{ aviso() }}</span>
+      <span>{{ catalogoIndisponivel() }}</span>
     </div>
   }
 
-  @if (formularioAberto()) {
-    <app-cardapio-form
-      [cardapio]="emEdicao()"
-      [salvando]="salvando()"
-      [receitas]="receitas()"
-      (salvar)="salvar($event)"
-      (cancelar)="fecharFormulario()"
-    />
-  }
+  <app-modal [aberto]="formularioAberto()" [titulo]="emEdicao() ? 'Editar cardápio' : 'Novo cardápio'" (fechar)="fecharFormulario()">
+    @if (formularioAberto()) {
+      <app-cardapio-form
+        [cardapio]="emEdicao()"
+        [salvando]="salvando()"
+        [receitas]="receitas()"
+        (salvar)="salvar($event)"
+        (cancelar)="fecharFormulario()"
+      />
+    }
+  </app-modal>
 
   <div class="overflow-hidden rounded-xl border border-slate-200 bg-surface-card shadow-sm">
     @if (carregando()) {

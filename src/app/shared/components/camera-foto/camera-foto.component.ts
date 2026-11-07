@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, OnDestroy, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, output, signal, viewChild } from '@angular/core';
 
 type EstadoCamera = 'inativo' | 'carregando' | 'ativa' | 'erro';
 
@@ -13,7 +13,7 @@ type EstadoCamera = 'inativo' | 'carregando' | 'ativa' | 'erro';
   templateUrl: './camera-foto.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CameraFotoComponent implements AfterViewInit, OnDestroy {
+export class CameraFotoComponent implements OnDestroy {
   readonly fotoCapturada = output<string>();
 
   readonly estado = signal<EstadoCamera>('inativo');
@@ -23,15 +23,11 @@ export class CameraFotoComponent implements AfterViewInit, OnDestroy {
   private readonly video = viewChild.required<ElementRef<HTMLVideoElement>>('video');
   private stream?: MediaStream;
 
-  ngAfterViewInit(): void {
-    // A camera so inicia sob clique explicito: pedir permissao assim que a tela abre surpreende
-    // o usuario e pode disparar o prompt do navegador antes dele entender o que esta acontecendo.
-  }
-
   ngOnDestroy(): void {
     this.pararCamera();
   }
 
+  // A camera so inicia sob clique explicito: pedir permissao ao abrir a tela surpreende o usuario.
   async iniciarCamera(): Promise<void> {
     if (this.estado() === 'carregando' || this.estado() === 'ativa') return;
 
@@ -74,5 +70,36 @@ export class CameraFotoComponent implements AfterViewInit, OnDestroy {
     this.ultimaFoto.set(fotoBase64);
     this.mensagem.set('Foto capturada. Pode enviar ou capturar de novo.');
     this.fotoCapturada.emit(fotoBase64);
+  }
+
+  async carregarImagem(evento: Event): Promise<void> {
+    const input = evento.target as HTMLInputElement;
+    const arquivo = input.files?.[0];
+    if (!arquivo) return;
+
+    try {
+      if (arquivo.type !== 'image/jpeg' && arquivo.type !== 'image/png') {
+        this.mensagem.set('Escolha um arquivo de imagem (JPG ou PNG).');
+        return;
+      }
+
+      const dataUrl = await this.lerComoDataUrl(arquivo);
+      this.ultimaFoto.set(dataUrl);
+      this.mensagem.set('Imagem carregada. Pode enviar ou escolher outra.');
+      this.fotoCapturada.emit(dataUrl);
+    } catch {
+      this.mensagem.set('Não foi possível ler a imagem. Tente outro arquivo.');
+    } finally {
+      input.value = '';
+    }
+  }
+
+  private lerComoDataUrl(arquivo: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const leitor = new FileReader();
+      leitor.onload = () => resolve(leitor.result as string);
+      leitor.onerror = () => reject(leitor.error);
+      leitor.readAsDataURL(arquivo);
+    });
   }
 }

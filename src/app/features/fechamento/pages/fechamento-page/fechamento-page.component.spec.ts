@@ -7,6 +7,7 @@ import {
   ConsolidacaoConsumo, CriarRelatorioIAResponse,
 } from '../../../dashboard/models/dashboard.models';
 import { DashboardApiService } from '../../../dashboard/data-access/dashboard-api.service';
+import { NotificacaoService } from '../../../../shared/notificacao/notificacao.service';
 import { FechamentoApiService } from '../../data-access/fechamento-api.service';
 
 const HOJE = new Date();
@@ -39,8 +40,11 @@ function montar(itens: { receitaId: string | null; nome: string }[], consumos = 
   fechamentoApi.registrarFechamento.and.callFake((request) => of(request.medicoes));
   fechamentoApi.listarMedicoes.and.returnValue(of([]));
 
+  const notificacao = jasmine.createSpyObj<NotificacaoService>('NotificacaoService', ['sucesso', 'erro']);
+
   TestBed.configureTestingModule({
     providers: [
+      { provide: NotificacaoService, useValue: notificacao },
       { provide: CardapioApiService, useValue: cardapioApi },
       { provide: DashboardApiService, useValue: dashboardApi },
       { provide: FechamentoApiService, useValue: fechamentoApi },
@@ -48,7 +52,7 @@ function montar(itens: { receitaId: string | null; nome: string }[], consumos = 
   });
   const fixture = TestBed.createComponent(FechamentoPageComponent);
   fixture.detectChanges();
-  return { fixture, componente: fixture.componentInstance, dashboardApi, fechamentoApi };
+  return { fixture, componente: fixture.componentInstance, dashboardApi, fechamentoApi, notificacao };
 }
 
 describe('FechamentoPageComponent', () => {
@@ -106,7 +110,7 @@ describe('FechamentoPageComponent', () => {
   });
 
   it('registra uma medicao por item e so entao gera o relatorio', () => {
-    const { componente, fixture, fechamentoApi, dashboardApi } = montar([
+    const { componente, fixture, fechamentoApi, dashboardApi, notificacao } = montar([
       { receitaId: 'r-maca', nome: 'Maçã' },
       { receitaId: 'r-cuscuz', nome: 'Cuscuz' },
     ]);
@@ -127,11 +131,12 @@ describe('FechamentoPageComponent', () => {
     expect(medicoesAoGerarRelatorio).toBe(1);
     expect(dashboardApi.criarRelatorio).toHaveBeenCalledTimes(1);
     expect(componente.relatorioId()).toBe('r1');
+    expect(notificacao.sucesso).toHaveBeenCalledOnceWith(jasmine.stringContaining('Turno fechado'));
     fixture.destroy();
   });
 
   it('nao gera relatorio quando uma medicao falha', () => {
-    const { componente, fixture, fechamentoApi, dashboardApi } = montar([
+    const { componente, fixture, fechamentoApi, dashboardApi, notificacao } = montar([
       { receitaId: 'r-maca', nome: 'Maçã' },
     ]);
     fechamentoApi.registrarFechamento.and.returnValue(
@@ -140,7 +145,8 @@ describe('FechamentoPageComponent', () => {
     componente.fechar();
 
     expect(dashboardApi.criarRelatorio).not.toHaveBeenCalled();
-    expect(componente.erro()).toContain('não pode superar');
+    expect(notificacao.erro).toHaveBeenCalledOnceWith(jasmine.stringContaining('não pode superar'));
+    expect(notificacao.sucesso).not.toHaveBeenCalled();
     expect(componente.relatorioId()).toBeNull();
     expect(componente.fechando()).toBeFalse();
     fixture.destroy();

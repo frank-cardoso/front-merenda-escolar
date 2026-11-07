@@ -54,9 +54,6 @@
     </div>
   </div>
 
-  @if (erro()) {
-    <p class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">{{ erro() }}</p>
-  }
   @if (aviso()) {
     <p class="rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-900">{{ aviso() }}</p>
   }
@@ -148,12 +145,5 @@
         </button>
       </div>
     </div>
-  }
-
-  @if (relatorioId()) {
-    <p class="rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-900">
-      Turno fechado e relatório solicitado. Acompanhe no Dashboard — aceitação e desperdício
-      passam a ser calculados a partir do que foi registrado aqui.
-    </p>
   }
 </section>

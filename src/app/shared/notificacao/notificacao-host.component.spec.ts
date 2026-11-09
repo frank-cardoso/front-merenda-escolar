@@ -28,6 +28,16 @@ describe('NotificacaoHostComponent', () => {
     expect(raiz.querySelector('[role="alert"]')).toBeNull();
   });
 
+  it('renderiza o aviso como status educado em âmbar', () => {
+    servico.aviso('Relatório não gerado.');
+    fixture.detectChanges();
+    const item = raiz.querySelector('[role="status"]');
+    expect(item?.textContent).toContain('Relatório não gerado.');
+    expect(item?.getAttribute('aria-live')).toBe('polite');
+    expect(item?.classList).toContain('bg-amber-50');
+    expect(raiz.querySelector('[role="alert"]')).toBeNull();
+  });
+
   it('renderiza o erro como alerta assertivo', () => {
     servico.erro('Erro 409 ao processar a solicitação.');
     fixture.detectChanges();

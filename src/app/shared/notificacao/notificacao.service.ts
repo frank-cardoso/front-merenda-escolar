@@ -1,6 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
 
-export type TipoNotificacao = 'sucesso' | 'erro';
+export type TipoNotificacao = 'sucesso' | 'erro' | 'aviso';
 
 export interface Notificacao {
   id: number;
@@ -13,13 +13,14 @@ export interface Notificacao {
 }
 
 export interface Destaque {
-  tipo: TipoNotificacao;
+  tipo: Exclude<TipoNotificacao, 'aviso'>;
   titulo: string;
   selo: string;
   detalhe?: string | null;
 }
 
 const DURACAO_MS = 5000;
+const DURACAO_AVISO_MS = 7000;
 const DURACAO_DESTAQUE_MS = 6000;
 const LIMITE = 3;
 
@@ -39,6 +40,11 @@ export class NotificacaoService {
 
   erro(mensagem: string): void {
     this.adicionar({ tipo: 'erro', destaque: false, mensagem }, DURACAO_MS);
+  }
+
+  /** Resultado que não é falha nem sucesso pleno: fica mais tempo na tela porque explica o que não aconteceu. */
+  aviso(mensagem: string): void {
+    this.adicionar({ tipo: 'aviso', destaque: false, mensagem }, DURACAO_AVISO_MS);
   }
 
   /** Só existe um destaque por vez: a leitura nova da fila substitui a anterior. */

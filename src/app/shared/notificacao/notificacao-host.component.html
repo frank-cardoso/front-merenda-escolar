@@ -40,11 +40,15 @@
          [class.bg-red-50]="n.tipo === 'erro'"
          [class.text-red-950]="n.tipo === 'erro'"
          [class.border-red-200]="n.tipo === 'erro'"
+         [class.bg-amber-50]="n.tipo === 'aviso'"
+         [class.text-amber-950]="n.tipo === 'aviso'"
+         [class.border-amber-300]="n.tipo === 'aviso'"
          [attr.role]="n.tipo === 'erro' ? 'alert' : 'status'"
          [attr.aria-live]="n.tipo === 'erro' ? 'assertive' : 'polite'">
       <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full"
             [class.bg-emerald-500]="n.tipo === 'sucesso'"
             [class.bg-red-500]="n.tipo === 'erro'"
+            [class.bg-amber-500]="n.tipo === 'aviso'"
             aria-hidden="true"></span>
       <p class="min-w-0 flex-1 break-words text-sm font-semibold">{{ n.mensagem }}</p>
       <button type="button" aria-label="Fechar notificação"

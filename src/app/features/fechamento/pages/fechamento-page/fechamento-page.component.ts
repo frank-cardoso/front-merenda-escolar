@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { finalize, switchMap } from 'rxjs';
+import { catchError, finalize, map, of, switchMap } from 'rxjs';
 import { CardapioApiService } from '../../../cardapio/data-access/cardapio-api.service';
 import { Turno } from '../../../cardapio/models/cardapio.models';
 import { DashboardApiService } from '../../../dashboard/data-access/dashboard-api.service';
@@ -169,11 +169,24 @@ export default class FechamentoPageComponent implements OnInit {
         restoNoPrato: linha.restoNoPrato,
       }));
 
+    // O fechamento já está gravado quando o relatório é pedido; uma recusa do relatório não o desfaz.
     this.fechamentoApi.registrarFechamento({ medicoes }).pipe(
-      switchMap(() => this.dashboardApi.criarRelatorio({ dataReferencia: data, turno })),
+      switchMap(() => this.dashboardApi.criarRelatorio({ dataReferencia: data, turno }).pipe(
+        map((resposta) => ({ resposta, falha: null })),
+        catchError((falha: HttpErrorResponse) => of({ resposta: null, falha })),
+      )),
       finalize(() => this.fechando.set(false)),
     ).subscribe({
-      next: (resposta) => {
+      next: ({ resposta, falha }) => {
+        if (falha) {
+          this.notificacao.sucesso('Turno fechado.');
+          if (falha.status === 422) {
+            this.notificacao.aviso(`Relatório de IA não gerado. ${this.mensagem(falha)}`);
+          } else {
+            this.notificacao.erro(this.mensagem(falha));
+          }
+          return;
+        }
         this.relatorioId.set(resposta.relatorioId);
         this.notificacao.sucesso('Turno fechado e relatório solicitado. Acompanhe no Dashboard — aceitação e '
           + 'desperdício passam a ser calculados a partir do que foi registrado aqui.');

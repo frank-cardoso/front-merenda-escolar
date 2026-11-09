@@ -20,6 +20,16 @@ describe('NotificacaoService', () => {
     expect(antiga).toEqual(jasmine.objectContaining({ tipo: 'sucesso', mensagem: 'Aluno cadastrado.' }));
   });
 
+  it('aviso entra com o tipo certo e some depois de 7 segundos', () => {
+    servico.aviso('Relatório não gerado.');
+    expect(servico.notificacoes()[0]).toEqual(
+      jasmine.objectContaining({ tipo: 'aviso', mensagem: 'Relatório não gerado.', destaque: false }));
+    jasmine.clock().tick(6999);
+    expect(servico.notificacoes().length).toBe(1);
+    jasmine.clock().tick(1);
+    expect(servico.notificacoes().length).toBe(0);
+  });
+
   it('some sozinha depois de 5 segundos', () => {
     servico.sucesso('Ok.');
 

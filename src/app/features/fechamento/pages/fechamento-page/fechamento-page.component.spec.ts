@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import FechamentoPageComponent from './fechamento-page.component';
@@ -40,7 +41,7 @@ function montar(itens: { receitaId: string | null; nome: string }[], consumos = 
   fechamentoApi.registrarFechamento.and.callFake((request) => of(request.medicoes));
   fechamentoApi.listarMedicoes.and.returnValue(of([]));
 
-  const notificacao = jasmine.createSpyObj<NotificacaoService>('NotificacaoService', ['sucesso', 'erro']);
+  const notificacao = jasmine.createSpyObj<NotificacaoService>('NotificacaoService', ['sucesso', 'erro', 'aviso']);
 
   TestBed.configureTestingModule({
     providers: [
@@ -149,6 +150,39 @@ describe('FechamentoPageComponent', () => {
     expect(notificacao.sucesso).not.toHaveBeenCalled();
     expect(componente.relatorioId()).toBeNull();
     expect(componente.fechando()).toBeFalse();
+    fixture.destroy();
+  });
+
+  it('fechamento gravado e relatorio recusado com 422 avisa em vez de dar erro', () => {
+    const { componente, fixture, dashboardApi, notificacao } = montar([
+      { receitaId: 'r-maca', nome: 'Maçã' },
+    ]);
+    const detail = 'O relatório de IA precisa de pelo menos 20 dias com fechamento nos últimos 30 dias deste turno; há 1.';
+    dashboardApi.criarRelatorio.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 422, error: { detail } })));
+
+    componente.fechar();
+
+    expect(notificacao.sucesso).toHaveBeenCalledOnceWith('Turno fechado.');
+    expect(notificacao.aviso).toHaveBeenCalledOnceWith(jasmine.stringContaining(detail));
+    expect(notificacao.erro).not.toHaveBeenCalled();
+    expect(componente.relatorioId()).toBeNull();
+    expect(componente.fechando()).toBeFalse();
+    fixture.destroy();
+  });
+
+  it('fechamento gravado e relatorio com outra falha confirma o fechamento e mostra erro', () => {
+    const { componente, fixture, dashboardApi, notificacao } = montar([
+      { receitaId: 'r-maca', nome: 'Maçã' },
+    ]);
+    dashboardApi.criarRelatorio.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 500, error: {} })));
+
+    componente.fechar();
+
+    expect(notificacao.sucesso).toHaveBeenCalledOnceWith('Turno fechado.');
+    expect(notificacao.erro).toHaveBeenCalledOnceWith('Não foi possível concluir a operação.');
+    expect(notificacao.aviso).not.toHaveBeenCalled();
     fixture.destroy();
   });
 

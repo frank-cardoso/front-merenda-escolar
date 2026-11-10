@@ -1,11 +1,11 @@
 import { IndicadoresLogisticos } from './indicadores.models';
 
-export type Turno = 'MANHA' | 'TARDE' | 'NOITE' | 'INTEGRAL';
 export type StatusRelatorioIA = 'PENDENTE' | 'PROCESSANDO' | 'CONCLUIDO' | 'FALHOU';
 
 export interface ConsolidacaoConsumo {
   data: string;
-  turno: Turno;
+  tipoRefeicaoId: string;
+  refeicao: string;
   cardapioId: string;
   cardapio: string;
   itensCardapio?: string[];
@@ -19,22 +19,8 @@ export interface ConsolidacaoConsumo {
 
 export interface CriarRelatorioIARequest {
   dataReferencia: string;
-  turno: Turno;
-  receitaIds?: string[];
-  datasSelecionadas?: string[];
+  tipoRefeicaoId: string;
   turmaId?: string;
-}
-
-export interface CardapioAnalise {
-  chave: string;
-  nome: string;
-  itens: string[];
-  receitaIds: string[];
-  datasServido: string[];
-  datasComFechamento: string[];
-  ocorrencias: number;
-  analisavel: boolean;
-  motivo: string | null;
 }
 
 export interface CriarRelatorioIAResponse {
@@ -52,11 +38,24 @@ export interface AnaliseLogistica {
   observacaoLimitacoes: string;
 }
 
+export type TipoAcaoPlano = 'REVISAR_PREPARACAO' | 'REDUZIR_PREPARO' | 'REVER_PLANEJAMENTO';
+
+export interface AcaoPlano {
+  tipo: TipoAcaoPlano;
+  receitaId: string | null;
+  item: string | null;
+  texto: string;
+  valor: number;
+  referencia: number;
+}
+
 export interface RelatorioIA {
   indicadores: IndicadoresLogisticos | null;
   id: string;
   dataReferencia: string;
-  turno: Turno;
+  turno: string | null;
+  tipoRefeicaoId: string;
+  refeicao: string;
   status: StatusRelatorioIA;
   provedor: string | null;
   modelo: string | null;
@@ -68,8 +67,11 @@ export interface RelatorioIA {
   iniciadoEm: string | null;
   concluidoEm: string | null;
   turmaId: string | null;
-  escopoCardapio: string | null;
 }
+
+export const ROTULO_STATUS_RELATORIO: Record<StatusRelatorioIA, string> = {
+  PENDENTE: 'Pendente', PROCESSANDO: 'Processando', CONCLUIDO: 'Concluído', FALHOU: 'Falhou',
+};
 
 export interface RelatorioResumo {
   id: string;

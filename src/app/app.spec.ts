@@ -32,6 +32,7 @@ describe('App', () => {
     expect(links).toEqual([
       ['Fila', '/fila'],
       ['Cardápios', '/cardapio'],
+      ['Refeições', '/grade-refeicoes'],
       ['Alunos', '/alunos'],
       ['Turmas', '/turmas'],
       ['Fechamento', '/fechamento'],

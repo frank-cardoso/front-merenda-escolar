@@ -12,21 +12,22 @@
     </label>
 
     <label class="text-sm font-semibold text-slate-700">
-      Turno
+      Refeição
       <select
-        name="turno"
+        name="tipoRefeicaoId"
         class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
-        [ngModel]="turno()"
-        (ngModelChange)="turno.set($event)"
+        [ngModel]="tipoRefeicaoId()"
+        (ngModelChange)="tipoRefeicaoId.set($event)"
       >
-        @for (item of turnos; track item) {
-          <option [value]="item">{{ item }}</option>
+        <option value="">Selecione a refeição</option>
+        @for (tipo of tiposRefeicao(); track tipo.id) {
+          <option [value]="tipo.id">{{ rotuloRefeicao(tipo) }}</option>
         }
       </select>
     </label>
 
     <label class="text-sm font-semibold text-slate-700">
-      Refeição
+      Nome do cardápio
       <input
         type="text"
         name="nomeRefeicao"

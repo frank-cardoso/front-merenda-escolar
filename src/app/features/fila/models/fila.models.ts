@@ -14,8 +14,11 @@ export interface ValidarConsumoResponse {
   sinal: 'VERDE' | 'VERMELHO';
   alunoId: string | null;
   alunoNome: string | null;
-  turno: 'MANHA' | 'TARDE' | 'NOITE' | 'INTEGRAL' | null;
+  tipoRefeicaoId: string | null;
+  refeicao: string | null;
   cardapio: string | null;
   registradoEm: string | null;
   motivo: string | null;
+  turnoDaTurma: string | null;
+  turnosDaRefeicao: string[] | null;
 }

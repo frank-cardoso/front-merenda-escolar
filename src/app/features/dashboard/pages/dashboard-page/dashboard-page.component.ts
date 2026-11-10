@@ -2,38 +2,48 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription, exhaustMap, finalize, map, switchMap, takeWhile, timeout, timer } from 'rxjs';
+import { rotuloRefeicao, TipoRefeicao } from '../../../../shared/refeicao/tipo-refeicao.models';
+import { TipoRefeicaoApiService } from '../../../../shared/refeicao/tipo-refeicao-api.service';
 import { DashboardApiService } from '../../data-access/dashboard-api.service';
-import { CardapioAnalise, ConsolidacaoConsumo, RelatorioIA, RelatorioResumo, Turno } from '../../models/dashboard.models';
+import { ConsolidacaoConsumo, RelatorioIA, RelatorioResumo, ROTULO_STATUS_RELATORIO } from '../../models/dashboard.models';
+import { dataBr, dataHoraLocal } from '../../models/formato';
 import { IndicadoresLogisticos } from '../../models/indicadores.models';
+import { FechamentoPainelApiService } from '../../../fechamento/data-access/fechamento-painel-api.service';
+import { FechamentoPendente } from '../../../fechamento/models/painel.models';
+import { PendenciasFechamentoComponent } from '../../components/pendencias-fechamento/pendencias-fechamento.component';
 import { IndicadoresLogisticosComponent } from '../../components/indicadores-logisticos/indicadores-logisticos.component';
+import { RelatorioIaComponent } from '../../components/relatorio-ia/relatorio-ia.component';
 
 @Component({
   selector: 'app-dashboard-page',
-  imports: [FormsModule, IndicadoresLogisticosComponent],
+  imports: [FormsModule, IndicadoresLogisticosComponent, PendenciasFechamentoComponent, RelatorioIaComponent],
   templateUrl: './dashboard-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardPageComponent implements OnInit {
   private static readonly LIMITE_CONSULTAS_RELATORIO = 40;
   readonly minimoFechamentosIA = 20;
+  readonly dataBr = dataBr;
+  readonly rotuloStatus = ROTULO_STATUS_RELATORIO;
   private readonly dashboardApi = inject(DashboardApiService);
+  private readonly tipoRefeicaoApi = inject(TipoRefeicaoApiService);
+  private readonly painelApi = inject(FechamentoPainelApiService);
   private consultas = new Subscription();
   private acompanhamento = new Subscription();
   private historicoConsulta = new Subscription();
+  private pendenciasConsulta = new Subscription();
 
-  readonly turnos: Turno[] = ['MANHA', 'TARDE', 'NOITE', 'INTEGRAL'];
+  readonly rotuloRefeicao = rotuloRefeicao;
+  readonly tiposRefeicao = signal<TipoRefeicao[]>([]);
   readonly aba = signal<'indicadores' | 'analise'>('indicadores');
   readonly dataReferencia = signal(this.formatarDataLocal(new Date()));
-  readonly turno = signal<Turno>('NOITE');
+  readonly tipoRefeicaoId = signal('');
   readonly turmaSelecionada = signal<string>('TODAS');
-  readonly receitasSelecionadas = signal<string[]>([]);
-  readonly cardapiosAnalise = signal<CardapioAnalise[]>([]);
-  readonly cardapioSelecionado = signal<string | null>(null);
   readonly consolidacao = signal<ConsolidacaoConsumo | null>(null);
   readonly relatorio = signal<RelatorioIA | null>(null);
   readonly historico = signal<RelatorioResumo[]>([]);
+  readonly pendencias = signal<FechamentoPendente[]>([]);
   readonly indicadoresAtuais = signal<IndicadoresLogisticos | null>(null);
-  readonly opcoesItens = signal<IndicadoresLogisticos['aceitacaoItens']>([]);
   readonly carregandoConsolidacao = signal(false);
   readonly carregandoIndicadores = signal(false);
   readonly gerandoRelatorio = signal(false);
@@ -47,17 +57,29 @@ export class DashboardPageComponent implements OnInit {
       this.consultas.unsubscribe();
       this.acompanhamento.unsubscribe();
       this.historicoConsulta.unsubscribe();
+      this.pendenciasConsulta.unsubscribe();
     });
   }
 
-  ngOnInit(): void { this.carregarConsolidacao(); }
+  ngOnInit(): void {
+    this.carregarPendencias();
+    this.tipoRefeicaoApi.listar().subscribe({
+      next: tipos => {
+        const ordenados = [...tipos].sort((a, b) => a.ordem - b.ordem);
+        this.tiposRefeicao.set(ordenados);
+        if (!ordenados.length) return;
+        this.tipoRefeicaoId.set(ordenados[0].id);
+        this.carregarConsolidacao();
+      },
+      error: () => this.erroConsolidacao.set('Não foi possível carregar as refeições.'),
+    });
+  }
 
   selecionarAba(aba: 'indicadores' | 'analise'): void {
     if (this.aba() === aba) return;
     this.aba.set(aba);
     if (aba === 'analise') {
       this.carregarHistorico();
-      this.carregarCardapiosAnalise();
       if (!this.indicadoresAtuais()) this.carregarIndicadoresParaAnalise();
     }
     else this.carregarConsolidacao();
@@ -73,14 +95,14 @@ export class DashboardPageComponent implements OnInit {
     this.erroConsolidacao.set(null);
     this.erroIndicadores.set(null);
     const data = this.dataReferencia();
-    const turno = this.turno();
-    this.consultas.add(this.dashboardApi.buscarConsolidacao(data, turno)
+    const tipoRefeicaoId = this.tipoRefeicaoId();
+    this.consultas.add(this.dashboardApi.buscarConsolidacao(data, tipoRefeicaoId)
       .pipe(finalize(() => this.carregandoConsolidacao.set(false)))
-      .subscribe({ next: dados => { this.consolidacao.set(dados); this.adicionarOpcoesCardapio(dados); },
+      .subscribe({ next: dados => this.consolidacao.set(dados),
         error: erro => this.erroConsolidacao.set(this.montarMensagemErro(erro)) }));
-    this.consultas.add(this.dashboardApi.buscarIndicadores(data, turno)
+    this.consultas.add(this.dashboardApi.buscarIndicadores(data, tipoRefeicaoId)
       .pipe(finalize(() => this.carregandoIndicadores.set(false)))
-      .subscribe({ next: dados => { this.indicadoresAtuais.set(dados); this.opcoesItens.set(dados.aceitacaoItens); },
+      .subscribe({ next: dados => this.indicadoresAtuais.set(dados),
         error: () => this.erroIndicadores.set('Não foi possível carregar os indicadores. Tente atualizar.') }));
   }
 
@@ -92,9 +114,7 @@ export class DashboardPageComponent implements OnInit {
     this.erro.set(null);
     const turmaId = this.turmaIdSelecionada();
     const request = {
-      dataReferencia: this.dataReferencia(), turno: this.turno(),
-      ...(this.receitasSelecionadas().length ? { receitaIds: this.receitasSelecionadas() } : {}),
-      ...(this.cardapioSelecionado() ? { datasSelecionadas: this.cardapioSelecionadoDatas() } : {}),
+      dataReferencia: this.dataReferencia(), tipoRefeicaoId: this.tipoRefeicaoId(),
       ...(turmaId ? { turmaId } : {}),
     };
     this.acompanhamento = this.dashboardApi.criarRelatorio(request).pipe(
@@ -105,84 +125,15 @@ export class DashboardPageComponent implements OnInit {
   }
 
   fechamentosMensais(): number {
-    const cardapio = this.cardapioSelecionadoDetalhes();
-    if (cardapio) return cardapio.datasComFechamento.length;
     return this.indicadoresAtuais()?.quantidadeFechamentosDoMes ?? 0;
   }
 
-  itensSelecionadosComFechamentos(): string {
-    return this.receitasSelecionadas().map(receitaId => {
-      const item = this.opcoesItens().find(opcao => opcao.receitaId === receitaId);
-      return item ? `${item.item} (${item.fechamentos} dias medidos)` : receitaId;
-    }).join(', ');
-  }
-
   analisePronta(): boolean {
-    const cardapio = this.cardapiosAnalise().find(item => item.chave === this.cardapioSelecionado());
-    return !!cardapio && cardapio.analisavel && this.receitasSelecionadas().length > 0
-      && cardapio.datasComFechamento.length >= this.minimoFechamentosIA
-      && this.fechamentosMensais() >= this.minimoFechamentosIA
-      && this.receitasSelecionadas().every((id) =>
-        (this.opcoesItens().find(item => item.receitaId === id)?.fechamentos ?? 0) >= 3);
+    return this.fechamentosMensais() >= this.minimoFechamentosIA;
   }
 
-  itensComAmostraInsuficiente(): string[] {
-    return this.receitasSelecionadas().map(id => this.opcoesItens().find(item => item.receitaId === id))
-      .filter(item => item !== undefined && item.fechamentos < 3).map(item => item!.item);
-  }
-
-  itensParaAnalise() {
-    const cardapio = this.cardapiosAnalise().find(item => item.chave === this.cardapioSelecionado());
-    if (!cardapio) return [];
-    const ids = new Set(cardapio.receitaIds);
-    return this.opcoesItens().filter(item => ids.has(item.receitaId));
-  }
-
-  cardapioSelecionadoDetalhes(): CardapioAnalise | null {
-    return this.cardapiosAnalise().find(item => item.chave === this.cardapioSelecionado()) ?? null;
-  }
-
-  resumoItens(itens: string[], limite = 3): string {
-    if (itens.length <= limite) return itens.join(', ');
-    return `${itens.slice(0, limite).join(', ')} + ${itens.length - limite} itens`;
-  }
-
-  cardapiosSemAmostraMinima(): CardapioAnalise[] {
-    return this.cardapiosAnalise().filter(item =>
-      !item.analisavel || item.datasComFechamento.length < this.minimoFechamentosIA);
-  }
-
-  itemSelecionado(receitaId: string): boolean {
-    return this.receitasSelecionadas().includes(receitaId);
-  }
-
-  alternarItem(receitaId: string): void {
-    this.receitasSelecionadas.update((selecionados) => selecionados.includes(receitaId)
-      ? selecionados.filter((id) => id !== receitaId)
-      : [...selecionados, receitaId]);
-    this.relatorio.set(null);
-    this.carregarIndicadoresParaAnalise(this.receitasSelecionadas(), this.cardapioSelecionadoDatas());
-  }
-
-  limparItensSelecionados(): void {
-    const idsDoCardapio = this.cardapiosAnalise()
-      .find(item => item.chave === this.cardapioSelecionado())?.receitaIds ?? [];
-    this.receitasSelecionadas.set(idsDoCardapio);
-    this.relatorio.set(null);
-    this.carregarIndicadoresParaAnalise(idsDoCardapio, this.cardapioSelecionadoDatas());
-  }
-
-  selecionarCardapio(chave: string): void {
-    const cardapio = this.cardapiosAnalise().find(item => item.chave === chave) ?? null;
-    this.cardapioSelecionado.set(cardapio?.chave ?? null);
-    if (cardapio) this.adicionarItensDoCardapio(cardapio);
-    this.receitasSelecionadas.set(cardapio?.receitaIds ?? []);
-    this.relatorio.set(null);
-    this.carregarIndicadoresParaAnalise(cardapio?.receitaIds ?? [], cardapio?.datasComFechamento ?? []);
-  }
-
-  cardapioSelecionadoDatas(): string[] {
-    return this.cardapiosAnalise().find(item => item.chave === this.cardapioSelecionado())?.datasComFechamento ?? [];
+  rotuloRelatorio(item: RelatorioResumo): string {
+    return `${dataHoraLocal(item.criadoEm)} · ${this.rotuloStatus[item.status]}`;
   }
 
   abrirRelatorio(id: string): void {
@@ -201,6 +152,10 @@ export class DashboardPageComponent implements OnInit {
     this.turmaSelecionada.set(valor);
   }
 
+  nomeRefeicaoSelecionada(): string {
+    return this.tiposRefeicao().find(tipo => tipo.id === this.tipoRefeicaoId())?.nome ?? '';
+  }
+
   nomeTurmaSelecionada(): string {
     if (this.turmaSelecionada() === 'TODAS') return '';
     const turma = this.indicadoresAtuais()?.porTurma
@@ -217,56 +172,35 @@ export class DashboardPageComponent implements OnInit {
   }
 
   dataReferenciaFormatada(): string {
-    const [ano, mes, dia] = this.dataReferencia().split('-');
-    return ano && mes && dia ? `${dia}/${mes}/${ano}` : this.dataReferencia();
-  }
-
-  /** O backend manda "Cardápio selecionado: X, Y" quando o escopo é um subconjunto de itens, ou
-   * o nome do cardápio inteiro quando não há filtro. Aqui só tira o prefixo de contexto da IA. */
-  itensDoEscopo(escopoCardapio: string): string {
-    return escopoCardapio.replace(/^Cardápio selecionado:\s*/, '');
-  }
-
-  /** Quebra o resumo corrido da IA em frases, uma por tópico, para não virar parede de texto. */
-  resumoEmTopicos(resumo: string): string[] {
-    return resumo.split(/(?<=[.!?])\s+/).map(frase => frase.trim()).filter(frase => frase.length > 0);
-  }
-
-  dataHoraFormatada(isoString: string | null): string {
-    if (!isoString) return '';
-    const data = new Date(isoString);
-    if (Number.isNaN(data.getTime())) return isoString;
-    return data.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+    return dataBr(this.dataReferencia());
   }
 
   verIndicadoresAtuais(): void {
     this.carregarConsolidacao();
   }
 
-  atualizarFiltros(campo: 'data' | 'turno', valor: string): void {
+  atualizarFiltros(campo: 'data' | 'refeicao', valor: string): void {
     if (!valor) return;
     this.acompanhamento.unsubscribe();
     this.consultas.unsubscribe();
     this.historicoConsulta.unsubscribe();
-    if (campo === 'data') this.dataReferencia.set(valor);
-    if (campo === 'turno') this.turno.set(valor as Turno);
+    if (campo === 'data') {
+      this.dataReferencia.set(valor);
+      this.carregarPendencias();
+    }
+    if (campo === 'refeicao') this.tipoRefeicaoId.set(valor);
     this.turmaSelecionada.set('TODAS');
     this.relatorio.set(null);
     this.consolidacao.set(null);
     this.indicadoresAtuais.set(null);
-    this.opcoesItens.set([]);
     this.historico.set([]);
     this.erro.set(null);
     this.erroConsolidacao.set(null);
     this.erroIndicadores.set(null);
     this.erroHistorico.set(null);
-    this.receitasSelecionadas.set([]);
-    this.cardapioSelecionado.set(null);
-    this.cardapiosAnalise.set([]);
     if (this.aba() === 'indicadores') this.carregarConsolidacao();
     else {
       this.carregarHistorico();
-      this.carregarCardapiosAnalise();
       this.carregarIndicadoresParaAnalise();
     }
   }
@@ -290,95 +224,33 @@ export class DashboardPageComponent implements OnInit {
     }
   }
 
+  /** Aviso auxiliar: se a consulta falhar, some em silêncio e não atrapalha os indicadores. */
+  private carregarPendencias(): void {
+    this.pendenciasConsulta.unsubscribe();
+    this.pendencias.set([]);
+    this.pendenciasConsulta = this.painelApi.pendencias(this.dataReferencia(), 7)
+      .subscribe({ next: dados => this.pendencias.set(dados), error: () => this.pendencias.set([]) });
+  }
+
   private carregarHistorico(): void {
     this.historicoConsulta.unsubscribe();
     this.historico.set([]);
     this.erroHistorico.set(null);
-    this.historicoConsulta = this.dashboardApi.listarRelatorios(this.dataReferencia(), this.turno())
+    this.historicoConsulta = this.dashboardApi.listarRelatorios(this.dataReferencia(), this.tipoRefeicaoId())
       .subscribe({ next: dados => this.historico.set(dados),
         error: () => this.erroHistorico.set('Não foi possível carregar o histórico de relatórios.') });
   }
 
-  private carregarIndicadoresParaAnalise(receitaIds: string[] = [], datas: string[] = []): void {
+  private carregarIndicadoresParaAnalise(): void {
     this.indicadoresAtuais.set(null);
     this.erroIndicadores.set(null);
     const data = this.dataReferencia();
-    const turno = this.turno();
+    const tipoRefeicaoId = this.tipoRefeicaoId();
     this.consultas.unsubscribe();
     this.consultas = new Subscription();
-    this.consultas.add(this.dashboardApi.buscarIndicadores(data, turno, receitaIds, datas)
-      .subscribe({ next: dados => {
-        this.indicadoresAtuais.set(dados);
-        this.atualizarOpcoesItens(dados.aceitacaoItens, receitaIds);
-      },
+    this.consultas.add(this.dashboardApi.buscarIndicadores(data, tipoRefeicaoId)
+      .subscribe({ next: dados => this.indicadoresAtuais.set(dados),
         error: () => this.erroIndicadores.set('Não foi possível verificar a amostra dos fechamentos.') }));
-  }
-
-  private carregarCardapiosAnalise(): void {
-    const fim = this.dataReferencia();
-    const inicio = this.somarDias(fim, -29);
-    const consulta = this.dashboardApi.buscarCardapiosAnalise?.(inicio, fim, this.turno());
-    consulta?.subscribe({ next: cardapios => this.cardapiosAnalise.set(cardapios),
-      error: () => this.cardapiosAnalise.set([]) });
-  }
-
-  private somarDias(data: string, dias: number): string {
-    const valor = new Date(`${data}T12:00:00`);
-    valor.setDate(valor.getDate() + dias);
-    return this.formatarDataLocal(valor);
-  }
-
-  private adicionarOpcoesCardapio(dados: ConsolidacaoConsumo): void {
-    const atuais = new Map(this.opcoesItens().map(item => [item.receitaId, item]));
-    (dados.receitasCardapio ?? []).forEach((receitaId, indice) => {
-      if (!atuais.has(receitaId)) atuais.set(receitaId, {
-        receitaId, item: dados.itensCardapio?.[indice] || receitaId,
-        porcoesPreparadas: 0, porcoesServidas: 0, porcoesConsumidas: 0,
-        restoNoPrato: 0, percentual: null, fechamentos: 0,
-      });
-    });
-    this.opcoesItens.set([...atuais.values()]);
-  }
-
-  private adicionarItensDoCardapio(cardapio: CardapioAnalise): void {
-    const atuais = new Map(this.opcoesItens().map(item => [item.receitaId, item]));
-    cardapio.receitaIds.forEach((receitaId, indice) => {
-      const atual = atuais.get(receitaId);
-      atuais.set(receitaId, {
-        receitaId,
-        item: cardapio.itens[indice] || atual?.item || receitaId,
-        porcoesPreparadas: atual?.porcoesPreparadas ?? 0,
-        porcoesServidas: atual?.porcoesServidas ?? 0,
-        porcoesConsumidas: atual?.porcoesConsumidas ?? 0,
-        restoNoPrato: atual?.restoNoPrato ?? 0,
-        percentual: atual?.percentual ?? null,
-        fechamentos: cardapio.datasComFechamento.length,
-      });
-    });
-    this.opcoesItens.set([...atuais.values()]);
-  }
-
-  private atualizarOpcoesItens(
-    itensMedidos: IndicadoresLogisticos['aceitacaoItens'], receitaIds: string[]
-  ): void {
-    if (!receitaIds.length) {
-      this.opcoesItens.set(itensMedidos);
-      return;
-    }
-    const atuais = new Map(this.opcoesItens().map(item => [item.receitaId, item]));
-    const diasDoCardapio = this.cardapioSelecionadoDetalhes()?.datasComFechamento.length;
-    itensMedidos.forEach(item => {
-      const atual = atuais.get(item.receitaId);
-      atuais.set(item.receitaId, {
-        ...item,
-        // Com um cardápio selecionado, todos os itens usam exatamente os dias
-        // completos desse cardápio. Não misturar com a amostra geral do período.
-        fechamentos: diasDoCardapio ?? item.fechamentos ?? atual?.fechamentos ?? 0,
-      });
-    });
-    // Os checkboxes mostram o universo inteiro do cardápio, não só o que está selecionado no
-    // momento; desmarcar um item não pode fazê-lo sumir da lista.
-    this.opcoesItens.set([...atuais.values()]);
   }
 
   private emAndamento(relatorio: RelatorioIA): boolean {

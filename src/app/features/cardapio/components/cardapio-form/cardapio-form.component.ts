@@ -9,7 +9,8 @@ import {
   untracked,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Cardapio, CardapioRequest, ItemCardapio, Receita, Turno } from '../../models/cardapio.models';
+import { rotuloRefeicao, TipoRefeicao } from '../../../../shared/refeicao/tipo-refeicao.models';
+import { Cardapio, CardapioRequest, ItemCardapio, Receita } from '../../models/cardapio.models';
 
 @Component({
   selector: 'app-cardapio-form',
@@ -21,21 +22,23 @@ export class CardapioFormComponent {
   readonly cardapio = input<Cardapio | null>(null);
   readonly salvando = input(false);
   readonly receitas = input<Receita[]>([]);
+  readonly tiposRefeicao = input<TipoRefeicao[]>([]);
 
   readonly salvar = output<CardapioRequest>();
   readonly cancelar = output<void>();
 
-  readonly turnos: Turno[] = ['MANHA', 'TARDE', 'NOITE', 'INTEGRAL'];
+  readonly rotuloRefeicao = rotuloRefeicao;
 
   readonly data = signal(this.hoje());
-  readonly turno = signal<Turno>('MANHA');
+  readonly tipoRefeicaoId = signal('');
   readonly nomeRefeicao = signal('');
   readonly descricao = signal('');
   readonly quantidadePlanejada = signal(0);
   readonly itens = signal<ItemCardapio[]>([this.itemVazio()]);
 
   readonly formularioValido = computed(() =>
-    this.nomeRefeicao().trim().length > 0
+    this.tipoRefeicaoId() !== ''
+    && this.nomeRefeicao().trim().length > 0
     && this.quantidadePlanejada() >= 0
     && this.itensPreenchidos().length > 0);
 
@@ -74,7 +77,7 @@ export class CardapioFormComponent {
 
     this.salvar.emit({
       data: this.data(),
-      turno: this.turno(),
+      tipoRefeicaoId: this.tipoRefeicaoId(),
       nomeRefeicao: this.nomeRefeicao().trim(),
       descricao: this.descricao().trim() || null,
       itens: this.itensPreenchidos(),
@@ -98,7 +101,7 @@ export class CardapioFormComponent {
 
   private preencher(cardapio: Cardapio | null): void {
     this.data.set(cardapio?.data ?? this.hoje());
-    this.turno.set(cardapio?.turno ?? 'MANHA');
+    this.tipoRefeicaoId.set(cardapio?.tipoRefeicaoId ?? '');
     this.nomeRefeicao.set(cardapio?.nomeRefeicao ?? '');
     this.descricao.set(cardapio?.descricao ?? '');
     this.quantidadePlanejada.set(cardapio?.quantidadePlanejada ?? 0);

@@ -50,9 +50,9 @@
           <div>
             <div class="flex items-center justify-between">
               <h3 class="text-base font-bold text-slate-900">Métricas da Fila</h3>
-              <span class="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">Turno {{ dados().turno }} • {{ turmaSelecionada() === 'TODAS' ? 'Todas as turmas' : 'Turma ' + nomeTurmaSelecionada() }}</span>
+              <span class="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">{{ dados().refeicao?.nome ?? 'Turno ' + dados().turno }} • {{ turmaSelecionada() === 'TODAS' ? 'Todas as turmas' : 'Turma ' + nomeTurmaSelecionada() }}</span>
             </div>
-            <p class="mt-0.5 text-xs text-slate-500">Autorizações registradas — dia e turno de referência{{ turmaSelecionada() === 'TODAS' ? '' : ', turma selecionada' }}.</p>
+            <p class="mt-0.5 text-xs text-slate-500">Autorizações registradas — dia e refeição de referência{{ turmaSelecionada() === 'TODAS' ? '' : ', turma selecionada' }}.</p>
             <dl class="mt-6 grid grid-cols-2 gap-4">
               <div class="rounded-xl border border-slate-100 bg-surface-subtle p-4">
                 <dt class="mb-1 block text-xs font-semibold text-slate-500">Alunos únicos autorizados</dt>
@@ -61,7 +61,7 @@
               <div class="rounded-xl border border-slate-100 bg-surface-subtle p-4">
                 <dt class="mb-1 block text-xs font-semibold text-slate-500">Repetições</dt>
                 <dd class="text-2xl font-extrabold text-slate-900">{{ atendimentos.repeticoes }}</dd>
-                <p class="mt-1 text-[10px] font-medium text-slate-400">Mesmo aluno, mesmo turno</p>
+                <p class="mt-1 text-[10px] font-medium text-slate-400">Mesmo aluno, mesma refeição</p>
               </div>
             </dl>
           </div>
@@ -179,13 +179,13 @@
     <div class="space-y-4 border-t border-slate-100 p-4 text-xs text-slate-600">
       <div>
         <p class="font-semibold text-slate-800">Escopo dos indicadores</p>
-        <p class="mt-1">Execução registrada, autorizações, cardápio e registros por turma consideram somente o dia {{ dados().dataReferencia }} no turno {{ dados().turno }}. A aceitação dos itens usa os fechamentos dos últimos 7 ou 30 dias até essa data, conforme o período escolhido. Os dados operacionais do dia não são indicadores mensais ou semanais.</p>
+        <p class="mt-1">Execução registrada, autorizações, cardápio e registros por turma consideram somente o dia {{ dados().dataReferencia }} na refeição {{ dados().refeicao?.nome ?? 'Turno ' + dados().turno }}. A aceitação dos itens usa os fechamentos dos últimos 7 ou 30 dias até essa data, conforme o período escolhido. Os dados operacionais do dia não são indicadores mensais ou semanais.</p>
       </div>
       <div>
         <p class="font-semibold text-slate-800">Limites do que é medido</p>
         <ul class="mt-1 list-disc space-y-1 pl-5">
           <li>Execução do planejamento: essa taxa mede somente registros de autorização em relação ao planejamento. Não mede presença, consumo efetivo, aceitação ou desperdício.</li>
-          <li>Métricas da fila: mostram autorizações registradas na fila. Não confirmam presença nem que a refeição foi consumida. Uma nova autorização do mesmo aluno no mesmo turno conta como repetição.</li>
+          <li>Métricas da fila: mostram autorizações registradas na fila. Não confirmam presença nem que a refeição foi consumida. Uma nova autorização do mesmo aluno na mesma refeição conta como repetição.</li>
           <li>Diferença do planejamento: é a diferença entre refeições planejadas e autorizações registradas. Não é desperdício de alimento.</li>
           <li>Por turma: esses registros não comprovam consumo. A turma exibida é a turma vigente do aluno na data do consumo; consumo de aluno sem enturmação naquela data aparece em "Sem turma".</li>
           <li>Aceitação de ingredientes: comparação calculada em uma janela histórica de medições, e não somente no dia selecionado.</li>

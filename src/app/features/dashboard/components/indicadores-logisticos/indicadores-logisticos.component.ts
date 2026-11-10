@@ -19,7 +19,7 @@ export class IndicadoresLogisticosComponent {
     return filtro === 'TODAS' ? linhas : linhas.filter(turma => this.chaveTurma(turma) === filtro);
   });
 
-  /** Métricas da Fila: números da turma escolhida quando dá para isolar; senão, do turno inteiro. */
+  /** Métricas da Fila: números da turma escolhida quando dá para isolar; senão, da refeição inteira. */
   readonly atendimentosExibidos = computed(() => {
     if (this.turmaSelecionada() === 'TODAS') return this.dados().atendimentos;
     const turma = this.porTurmaFiltrado()[0];

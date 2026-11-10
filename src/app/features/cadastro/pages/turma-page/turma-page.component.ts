@@ -7,6 +7,9 @@ import { ModalComponent } from '../../../../shared/components/modal/modal.compon
 import { montarMensagemErro } from '../../application/mensagem-erro';
 import { TurmaApiService } from '../../data-access/turma-api.service';
 import { Turma, TurmaRequest, Turno } from '../../models/cadastro.models';
+import { TipoRefeicao } from '../../../../shared/refeicao/tipo-refeicao.models';
+import { TipoRefeicaoApiService } from '../../../../shared/refeicao/tipo-refeicao-api.service';
+import { refeicoesDoTurno, rotuloTurno } from '../../../../shared/refeicao/turnos';
 
 @Component({
   selector: 'app-turma-page',
@@ -17,10 +20,14 @@ import { Turma, TurmaRequest, Turno } from '../../models/cadastro.models';
 export class TurmaPageComponent implements OnInit {
   private readonly notificacao = inject(NotificacaoService);
   private readonly turmaApi = inject(TurmaApiService);
+  private readonly tipoRefeicaoApi = inject(TipoRefeicaoApiService);
 
+  readonly rotuloTurno = rotuloTurno;
   readonly turnos: Turno[] = ['MANHA', 'TARDE', 'NOITE', 'INTEGRAL'];
 
   readonly turmas = signal<Turma[]>([]);
+  /** `null` quando a grade não carregou: a coluna e a dica somem, o resto da tela segue. */
+  readonly grade = signal<TipoRefeicao[] | null>(null);
   readonly carregando = signal(false);
   readonly salvando = signal(false);
   readonly emEdicao = signal<Turma | null>(null);
@@ -45,7 +52,18 @@ export class TurmaPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.carregar();
+    this.tipoRefeicaoApi.listar().subscribe({
+      next: (grade) => this.grade.set(grade),
+      error: () => this.grade.set(null),
+    });
   }
+
+  refeicoesDaTurma(turno: Turno): TipoRefeicao[] {
+    return refeicoesDoTurno(this.grade() ?? [], turno);
+  }
+
+  readonly nomesRefeicoesDoTurno = computed(() =>
+    this.refeicoesDaTurma(this.turno()).map((refeicao) => refeicao.nome).join(', '));
 
   carregar(): void {
     this.carregando.set(true);

@@ -8,12 +8,12 @@ import { CardapioPageComponent } from './cardapio-page.component';
 
 const base = environment.apiBaseUrl;
 const request: CardapioRequest = {
-  data: '2026-11-07', turno: 'MANHA', nomeRefeicao: 'Lanche', descricao: null,
+  data: '2026-11-07', tipoRefeicaoId: 'id-almoco', nomeRefeicao: 'Lanche', descricao: null,
   quantidadePlanejada: 100, itens: [],
 } as CardapioRequest;
 
 const cardapio: Cardapio = {
-  id: 'c-1', data: '2026-11-08', turno: 'TARDE', nomeRefeicao: 'Sopa', descricao: null,
+  id: 'c-1', data: '2026-11-08', tipoRefeicaoId: 'id-almoco', refeicao: 'Almoço', nomeRefeicao: 'Sopa', descricao: null,
   itens: [], quantidadePlanejada: 80, ativo: true,
 };
 
@@ -36,10 +36,17 @@ describe('CardapioPageComponent', () => {
     fixture.detectChanges();
     http.expectOne(`${base}/cardapios`).flush([cardapio]);
     http.expectOne(`${base}/receitas`).flush([]);
+    http.expectOne(`${base}/tipos-refeicao`).flush([]);
     fixture.detectChanges();
   });
 
   afterEach(() => http.verify());
+
+  it('mostra a refeição na listagem', () => {
+    const celulas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('tbody td'))
+      .map((td) => td.textContent?.trim());
+    expect(celulas).toContain('Almoço');
+  });
 
   it('salvar com sucesso notifica e nao renderiza bloco fixo', () => {
     fixture.componentInstance.salvar(request);

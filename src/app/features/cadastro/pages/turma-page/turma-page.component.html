@@ -25,7 +25,7 @@
     <div class="rounded-xl border border-slate-200 bg-surface-card shadow-sm p-5">
       <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Turno com mais turmas</p>
       @if (turnoPrincipal(); as principal) {
-        <p class="mt-2 text-3xl font-extrabold text-slate-900">{{ principal.turno }}</p>
+        <p class="mt-2 text-3xl font-extrabold text-slate-900">{{ rotuloTurno(principal.turno) }}</p>
         <p class="mt-1 text-xs text-slate-500">{{ principal.total }} de {{ turmas().length }} turmas</p>
       } @else {
         <p class="mt-2 text-3xl font-extrabold text-slate-900">-</p>
@@ -53,9 +53,18 @@
             <select name="turno" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
                     [ngModel]="turno()" (ngModelChange)="turno.set($event)">
               @for (item of turnos; track item) {
-                <option [value]="item">{{ item }}</option>
+                <option [value]="item">{{ rotuloTurno(item) }}</option>
               }
             </select>
+            @if (grade()) {
+              <span class="mt-1 block text-xs font-normal text-slate-500">
+                @if (nomesRefeicoesDoTurno()) {
+                  Esta turma terá direito a: {{ nomesRefeicoesDoTurno() }}
+                } @else {
+                  Esta turma não terá direito a nenhuma refeição.
+                }
+              </span>
+            }
           </label>
           <label class="text-sm font-semibold text-slate-700">
             Máximo de alunos
@@ -86,6 +95,9 @@
               <th scope="col" class="px-5 py-3">Código</th>
               <th scope="col" class="px-5 py-3">Descrição</th>
               <th scope="col" class="px-5 py-3">Turno</th>
+              @if (grade()) {
+                <th scope="col" class="px-5 py-3">Refeições</th>
+              }
               <th scope="col" class="px-5 py-3 text-right">Máximo</th>
               <th scope="col" class="px-5 py-3 text-right">Ações</th>
             </tr>
@@ -98,8 +110,19 @@
                 </td>
                 <td class="px-5 py-3 text-slate-900">{{ turma.descricao }}</td>
                 <td class="px-5 py-3">
-                  <span class="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-slate-700">{{ turma.turno }}</span>
+                  <span class="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold tracking-wide text-slate-700">{{ rotuloTurno(turma.turno) }}</span>
                 </td>
+                @if (grade()) {
+                  <td class="px-5 py-3" data-testid="refeicoes-da-turma">
+                    <div class="flex flex-wrap gap-1">
+                      @for (refeicao of refeicoesDaTurma(turma.turno); track refeicao.id) {
+                        <span class="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">{{ refeicao.nome }}</span>
+                      } @empty {
+                        <span class="text-xs text-slate-500">Nenhuma refeição</span>
+                      }
+                    </div>
+                  </td>
+                }
                 <td class="px-5 py-3 text-right font-bold text-slate-900">{{ turma.quantidadeMaximaAlunos ?? '-' }}</td>
                 <td class="px-5 py-3">
                   <div class="flex justify-end gap-2">

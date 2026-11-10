@@ -1,0 +1,128 @@
+@let r = relatorio();
+<div class="mt-5 space-y-6">
+  <div>
+    <p class="text-lg font-bold text-slate-900">{{ cabecalho() }}</p>
+    <p class="text-xs text-slate-500">Gerado em {{ geradoEm() }}</p>
+  </div>
+
+  @if (cartoes().length) {
+    <div class="grid gap-3 sm:grid-cols-3">
+      @for (cartao of cartoes(); track cartao.titulo) {
+        <div class="rounded-md p-3" [class]="cartao.valor ? 'bg-brand-50' : 'bg-slate-100'">
+          <p class="text-xs font-semibold uppercase tracking-wider text-slate-600">{{ cartao.titulo }}</p>
+          @if (cartao.valor) {
+            <p class="mt-1 text-2xl font-bold text-slate-900">
+              {{ cartao.valor }}
+              @if (cartao.faixa) { <span class="ml-1 text-sm font-semibold text-slate-600">{{ cartao.faixa }}</span> }
+            </p>
+          }
+          <p class="mt-1 text-xs text-slate-600">{{ cartao.detalhe }}</p>
+        </div>
+      }
+    </div>
+  }
+
+  @if (plano(); as acoes) {
+    <section aria-labelledby="titulo-plano">
+      <h3 id="titulo-plano" class="text-sm font-bold text-slate-900">O que fazer</h3>
+      @if (acoes.length) {
+        <ol class="mt-2 space-y-2">
+          @for (acao of acoes; track $index) {
+            <li class="flex items-start gap-3 rounded-md border border-slate-200 bg-white p-3 text-sm text-slate-800">
+              <svg class="mt-0.5 h-4 w-4 shrink-0 text-brand-700" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                @switch (acao.tipo) {
+                  @case ('REVISAR_PREPARACAO') { <circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path> }
+                  @case ('REDUZIR_PREPARO') { <path d="M12 5v14"></path><path d="m6 13 6 6 6-6"></path> }
+                  @default { <rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path> }
+                }
+              </svg>
+              <span><span class="mr-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{{ rotuloAcao(acao.tipo) }}</span>{{ acao.texto }}</span>
+            </li>
+          }
+        </ol>
+      } @else {
+        @if (medicaoCompleta()) {
+          <p class="mt-2 rounded-md bg-brand-50 p-3 text-sm text-brand-900">Nenhuma ação necessária: todos os itens medidos estão dentro das metas.</p>
+        } @else {
+          <p class="mt-2 rounded-md bg-slate-100 p-3 text-sm text-slate-700">Ainda não há medição suficiente para recomendar ações.</p>
+        }
+      }
+    </section>
+  }
+
+  @if (itens().length) {
+    <section aria-labelledby="titulo-itens">
+      <h3 id="titulo-itens" class="text-sm font-bold text-slate-900">Itens da refeição</h3>
+      <div class="mt-2 overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <caption class="sr-only">Itens ordenados pela aceitação, do menor para o maior</caption>
+          <thead class="text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th scope="col" class="py-2 pr-3">Item</th>
+              <th scope="col" class="py-2 pr-3">Aceitação</th>
+              <th scope="col" class="py-2 pr-3">Sobra na panela</th>
+              <th scope="col" class="py-2 pr-3">Resto no prato (porções)</th>
+              <th scope="col" class="py-2">Dias medidos</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of itens(); track item.receitaId) {
+              <tr data-testid="linha-item" class="border-t border-slate-100"
+                [attr.data-destaque]="destacado(item) ? 'sim' : 'nao'" [class.bg-amber-50]="destacado(item)">
+                <th scope="row" class="py-2 pr-3 font-semibold text-slate-800">{{ item.item }}</th>
+                <td class="py-2 pr-3" [class.font-bold]="!aceitacaoOk(item)"
+                  [class.text-amber-900]="!aceitacaoOk(item)">
+                  {{ item.percentual == null ? '—' : numeroBr(item.percentual) + '%' }}
+                </td>
+                <td class="py-2 pr-3" [class.font-bold]="(item.sobraPercentual ?? 0) >= metaSobra"
+                  [class.text-amber-900]="(item.sobraPercentual ?? 0) >= metaSobra">
+                  {{ item.sobraPercentual == null ? '—' : numeroBr(item.sobraPercentual) + '%' }}
+                </td>
+                <td class="py-2 pr-3">{{ numeroBr(item.restoNoPrato) }}</td>
+                <td class="py-2">{{ item.fechamentos }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="mt-1 text-xs text-slate-500">Destaque: aceitação abaixo de {{ metaAceitacao }}% ou sobra na panela a partir de {{ metaSobra }}%.</p>
+    </section>
+  }
+
+  @if (r.resultado; as analise) {
+    <section aria-labelledby="titulo-leitura">
+      @if (r.provedor === 'deterministico') {
+        <h3 id="titulo-leitura" class="text-sm font-bold text-slate-900">Resumo do período</h3>
+        <p class="mt-1 text-xs text-slate-500">Resumo gerado sem IA: o serviço de IA não respondeu.</p>
+      } @else {
+        <h3 id="titulo-leitura" class="text-sm font-bold text-slate-900">Leitura da IA</h3>
+      }
+      <p class="mt-2 text-sm text-slate-700">{{ analise.resumoExecutivo }}</p>
+    </section>
+
+    <details data-testid="como-calculado" class="rounded-md bg-slate-50 p-3 text-xs text-slate-600">
+      <summary class="cursor-pointer text-sm font-semibold text-slate-700">Como foi calculado</summary>
+      <ul class="mt-2 list-disc space-y-1 pl-5">
+        <li>Janela: os fechamentos dos 30 dias até a data de referência.</li>
+        <li>Aceitação = (servido − resto no prato) / servido. Meta: {{ metaAceitacao }}%.</li>
+        <li>Sobra na panela = (preparado − servido) / preparado. Atenção a partir de {{ metaSobra }}%.</li>
+        <li>Desperdício = (sobra na panela + resto no prato) / preparado. Faixas: baixo até 10%, médio até 20%, alto acima disso.</li>
+        <li>Refeições servidas: média diária de refeições servidas contra a média planejada; meta de 80% do planejado.</li>
+        <li>São necessários 20 dias com fechamento; cada item precisa de pelo menos 3 fechamentos para entrar na tabela e no plano.</li>
+      </ul>
+      @if (analise.observacaoLimitacoes) { <p class="mt-2 font-medium">{{ analise.observacaoLimitacoes }}</p> }
+      @if (!plano() && (analise.evidencias.length || analise.recomendacoes.length)) {
+        <p class="mt-3 font-semibold text-slate-700">Texto da versão anterior</p>
+        @if (analise.evidencias.length) {
+          <p class="mt-1 font-semibold">Evidências</p>
+          <ul class="list-disc space-y-1 pl-5">@for (e of analise.evidencias; track e) { <li>{{ e }}</li> }</ul>
+        }
+        @if (analise.recomendacoes.length) {
+          <p class="mt-1 font-semibold">Recomendações</p>
+          <ul class="list-disc space-y-1 pl-5">@for (e of analise.recomendacoes; track e) { <li>{{ e }}</li> }</ul>
+        }
+      }
+    </details>
+  }
+</div>

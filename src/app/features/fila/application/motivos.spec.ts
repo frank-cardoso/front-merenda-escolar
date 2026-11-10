@@ -31,4 +31,11 @@ describe('traduzirMotivo', () => {
     expect(traduzirMotivo('ROSTO_NAO_CONFERE')).not.toContain('não confere');
     expect(traduzirMotivo('ALUNO_SEM_ROSTO_CADASTRADO')).not.toContain('não tem rosto cadastrado');
   });
+
+  it('traduz os motivos de refeição', () => {
+    expect(traduzirMotivo('FORA_DO_HORARIO_DE_REFEICAO')).toBe('Fora do horário de refeição.');
+    expect(traduzirMotivo('REFEICAO_NAO_PREVISTA_PARA_TURMA')).toBe('Esta refeição não é servida para a turma do aluno.');
+    expect(traduzirMotivo('GRADE_DE_REFEICOES_INVALIDA'))
+      .toBe('Grade de refeições não configurada ou inconsistente. Avise a coordenação.');
+  });
 });

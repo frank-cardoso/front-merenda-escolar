@@ -7,7 +7,7 @@
       </span>
       <h2 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">Cardápios Escolares</h2>
       <p class="mt-1 max-w-3xl text-sm text-slate-500">
-        Cadastre os cardápios servidos por data e turno. A fila e o dashboard usam esses dados.
+        Cadastre os cardápios servidos por data e refeição. A fila e o dashboard usam esses dados.
       </p>
     </div>
 
@@ -34,6 +34,7 @@
         [cardapio]="emEdicao()"
         [salvando]="salvando()"
         [receitas]="receitas()"
+        [tiposRefeicao]="tiposRefeicao()"
         (salvar)="salvar($event)"
         (cancelar)="fecharFormulario()"
       />
@@ -53,8 +54,8 @@
           <thead class="border-b border-slate-200 bg-surface-subtle/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
             <tr>
               <th scope="col" class="px-4 py-3.5">Data</th>
-              <th scope="col" class="px-3 py-3.5">Turno</th>
-              <th scope="col" class="px-4 py-3.5">Refeição</th>
+              <th scope="col" class="px-3 py-3.5">Refeição</th>
+              <th scope="col" class="px-4 py-3.5">Cardápio</th>
               <th scope="col" class="px-4 py-3.5">Itens e quantidades</th>
               <th scope="col" class="px-3 py-3.5 text-center">Planejado</th>
               <th scope="col" class="px-4 py-3.5 text-right">Ações</th>
@@ -67,7 +68,7 @@
                   <span class="inline-flex rounded bg-slate-100 px-2 py-1 font-mono text-xs font-semibold text-slate-800">{{ cardapio.data }}</span>
                 </td>
                 <td class="whitespace-nowrap px-3 py-4">
-                  <span class="rounded-full border px-2.5 py-1 text-xs font-bold" [class]="classeTurno(cardapio.turno)">{{ cardapio.turno }}</span>
+                  <span class="rounded-full border border-brand-200 bg-brand-100 px-2.5 py-1 text-xs font-bold text-brand-800">{{ cardapio.refeicao }}</span>
                 </td>
                 <td class="px-4 py-4">
                   <p class="font-semibold text-slate-900 group-hover:text-brand-800">{{ cardapio.nomeRefeicao }}</p>

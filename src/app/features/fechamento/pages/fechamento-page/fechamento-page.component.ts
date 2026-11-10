@@ -1,16 +1,19 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { catchError, finalize, map, of, switchMap } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
+import { catchError, finalize, map, of, switchMap, tap } from 'rxjs';
 import { CardapioApiService } from '../../../cardapio/data-access/cardapio-api.service';
-import { Turno } from '../../../cardapio/models/cardapio.models';
 import { DashboardApiService } from '../../../dashboard/data-access/dashboard-api.service';
 import { FechamentoApiService } from '../../data-access/fechamento-api.service';
+import { FechamentoPainelApiService } from '../../data-access/fechamento-painel-api.service';
 import { NotificacaoService } from '../../../../shared/notificacao/notificacao.service';
+import { escolherRefeicaoInicial, PainelDiaComponent } from '../../components/painel-dia/painel-dia.component';
 import { LinhaFechamento } from '../../models/fechamento.models';
+import { RefeicaoDoDia } from '../../models/painel.models';
 
 /**
- * Fechamento do turno: quem serviu registra o que sobrou.
+ * Fechamento da refeição: quem serviu registra o que sobrou.
  *
  * Pede tres numeros por item: preparado, o que sobrou na panela e o que voltou no prato. O servido
  * e derivado (preparado menos sobra), nunca informado.
@@ -21,7 +24,7 @@ import { LinhaFechamento } from '../../models/fechamento.models';
  */
 @Component({
   selector: 'app-fechamento-page',
-  imports: [FormsModule],
+  imports: [FormsModule, PainelDiaComponent],
   templateUrl: './fechamento-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -30,11 +33,15 @@ export default class FechamentoPageComponent implements OnInit {
   private readonly cardapioApi = inject(CardapioApiService);
   private readonly dashboardApi = inject(DashboardApiService);
   private readonly fechamentoApi = inject(FechamentoApiService);
+  private readonly painelApi = inject(FechamentoPainelApiService);
+  private readonly rota = inject(ActivatedRoute);
+  private versaoPainel = 0;
+  private versaoCarga = 0;
 
-  readonly turnos: Turno[] = ['MANHA', 'TARDE', 'NOITE', 'INTEGRAL'];
+  readonly refeicoes = signal<RefeicaoDoDia[]>([]);
 
   readonly data = signal(this.hoje());
-  readonly turno = signal<Turno>('MANHA');
+  readonly tipoRefeicaoId = signal('');
   readonly linhas = signal<LinhaFechamento[]>([]);
   readonly consumos = signal(0);
   readonly nomeCardapio = signal('');
@@ -52,10 +59,55 @@ export default class FechamentoPageComponent implements OnInit {
   readonly totalPrato = computed(() => this.somar('restoNoPrato'));
 
   ngOnInit(): void {
+    const parametros = this.rota.snapshot.queryParamMap;
+    const data = parametros.get('data');
+    if (data && /^\d{4}-\d{2}-\d{2}$/.test(data)) this.data.set(data);
+    this.carregarPainel(parametros.get('refeicao'));
+  }
+
+  trocarData(data: string): void {
+    if (!data) return;
+    this.data.set(data);
+    this.versaoCarga++;
+    this.carregando.set(false);
+    this.linhas.set([]);
+    this.refeicoes.set([]);
+    this.aviso.set(null);
+    this.relatorioId.set(null);
+    this.carregarPainel();
+  }
+
+  escolherRefeicao(tipoRefeicaoId: string): void {
+    this.tipoRefeicaoId.set(tipoRefeicaoId);
     this.carregar();
   }
 
+  /** Só a última consulta vale: trocar a data com uma resposta antiga em voo não pode sobrescrevê-la. */
+  private carregarPainel(pedida?: string | null, manterSelecao = false): void {
+    const versao = ++this.versaoPainel;
+    this.painelApi.doDia(this.data()).subscribe({
+      next: (refeicoes) => {
+        if (versao !== this.versaoPainel) return;
+        this.refeicoes.set(refeicoes);
+        if (manterSelecao) return;
+        this.tipoRefeicaoId.set(escolherRefeicaoInicial(refeicoes, pedida));
+        if (this.tipoRefeicaoId()) {
+          this.carregar();
+        } else {
+          this.linhas.set([]);
+          this.aviso.set('Não há refeições configuradas.');
+        }
+      },
+      error: () => {
+        if (versao === this.versaoPainel) this.notificacao.erro('Não foi possível carregar as refeições do dia.');
+      },
+    });
+  }
+
   carregar(): void {
+    if (!this.tipoRefeicaoId()) return;
+    const versao = ++this.versaoCarga;
+    const vigente = () => versao === this.versaoCarga;
     this.carregando.set(true);
     this.aviso.set(null);
     this.relatorioId.set(null);
@@ -63,15 +115,16 @@ export default class FechamentoPageComponent implements OnInit {
     this.medicoesExistentes.set(0);
 
     const data = this.data();
-    const turno = this.turno();
+    const tipoRefeicaoId = this.tipoRefeicaoId();
 
     this.cardapioApi.listar()
-      .pipe(finalize(() => this.carregando.set(false)))
+      .pipe(finalize(() => { if (vigente()) this.carregando.set(false); }))
       .subscribe({
         next: (cardapios) => {
-          const cardapio = cardapios.find((c) => c.data === data && c.turno === turno);
+          if (!vigente()) return;
+          const cardapio = cardapios.find((c) => c.data === data && c.tipoRefeicaoId === tipoRefeicaoId);
           if (!cardapio) {
-            this.aviso.set('Não há cardápio cadastrado para esta data e turno.');
+            this.aviso.set('Não há cardápio cadastrado para esta data e refeição.');
             return;
           }
           this.nomeCardapio.set(cardapio.nomeRefeicao);
@@ -85,16 +138,19 @@ export default class FechamentoPageComponent implements OnInit {
           this.buscarConsumos(cardapio.itens.map((item) => ({
             receitaId: item.receitaId!,
             nome: item.nome,
-          })));
+          })), vigente);
         },
-        error: (erro: HttpErrorResponse) => this.notificacao.erro(this.mensagem(erro)),
+        error: (erro: HttpErrorResponse) => {
+          if (vigente()) this.notificacao.erro(this.mensagem(erro));
+        },
       });
   }
 
   /** A contagem da fila preenche preparadas e servidas; as perdas comecam zeradas. */
-  private buscarConsumos(itens: { receitaId: string; nome: string }[]): void {
-    this.dashboardApi.buscarConsolidacao(this.data(), this.turno()).subscribe({
+  private buscarConsumos(itens: { receitaId: string; nome: string }[], vigente: () => boolean): void {
+    this.dashboardApi.buscarConsolidacao(this.data(), this.tipoRefeicaoId()).subscribe({
       next: (consolidacao) => {
+        if (!vigente()) return;
         this.consumos.set(consolidacao.consumosAutorizados);
         this.linhas.set(itens.map((item) => ({
           ...item,
@@ -102,8 +158,9 @@ export default class FechamentoPageComponent implements OnInit {
           sobraNaoDistribuida: 0,
           restoNoPrato: 0,
         })));
-        this.fechamentoApi.listarMedicoes(this.data(), this.turno()).subscribe({
+        this.fechamentoApi.listarMedicoes(this.data(), this.tipoRefeicaoId()).subscribe({
           next: (medicoes) => {
+            if (!vigente()) return;
             this.medicoesExistentes.set(medicoes.length);
             if (!medicoes.length) return;
             const porReceita = new Map(medicoes.map((medicao) => [medicao.receitaId, medicao]));
@@ -117,10 +174,14 @@ export default class FechamentoPageComponent implements OnInit {
               } : linha;
             }));
           },
-          error: (erro: HttpErrorResponse) => this.notificacao.erro(this.mensagem(erro)),
+          error: (erro: HttpErrorResponse) => {
+            if (vigente()) this.notificacao.erro(this.mensagem(erro));
+          },
         });
       },
-      error: (erro: HttpErrorResponse) => this.notificacao.erro(this.mensagem(erro)),
+      error: (erro: HttpErrorResponse) => {
+        if (vigente()) this.notificacao.erro(this.mensagem(erro));
+      },
     });
   }
 
@@ -159,9 +220,9 @@ export default class FechamentoPageComponent implements OnInit {
     this.relatorioId.set(null);
 
     const data = this.data();
-    const turno = this.turno();
+    const tipoRefeicaoId = this.tipoRefeicaoId();
     const medicoes = this.linhas().map((linha) => ({
-        data, turno,
+        data, tipoRefeicaoId,
         receitaId: linha.receitaId,
         porcoesPreparadas: linha.porcoesPreparadas,
         porcoesServidas: this.servidas(linha),
@@ -171,7 +232,12 @@ export default class FechamentoPageComponent implements OnInit {
 
     // O fechamento já está gravado quando o relatório é pedido; uma recusa do relatório não o desfaz.
     this.fechamentoApi.registrarFechamento({ medicoes }).pipe(
-      switchMap(() => this.dashboardApi.criarRelatorio({ dataReferencia: data, turno }).pipe(
+      tap((gravadas) => {
+        if (this.data() !== data) return;
+        if (this.tipoRefeicaoId() === tipoRefeicaoId) this.medicoesExistentes.set(gravadas.length);
+        this.carregarPainel(null, true);
+      }),
+      switchMap(() => this.dashboardApi.criarRelatorio({ dataReferencia: data, tipoRefeicaoId }).pipe(
         map((resposta) => ({ resposta, falha: null })),
         catchError((falha: HttpErrorResponse) => of({ resposta: null, falha })),
       )),
@@ -179,7 +245,7 @@ export default class FechamentoPageComponent implements OnInit {
     ).subscribe({
       next: ({ resposta, falha }) => {
         if (falha) {
-          this.notificacao.sucesso('Turno fechado.');
+          this.notificacao.sucesso('Refeição fechada.');
           if (falha.status === 422) {
             this.notificacao.aviso(`Relatório de IA não gerado. ${this.mensagem(falha)}`);
           } else {
@@ -187,8 +253,8 @@ export default class FechamentoPageComponent implements OnInit {
           }
           return;
         }
-        this.relatorioId.set(resposta.relatorioId);
-        this.notificacao.sucesso('Turno fechado e relatório solicitado. Acompanhe no Dashboard — aceitação e '
+        if (this.data() === data && this.tipoRefeicaoId() === tipoRefeicaoId) this.relatorioId.set(resposta.relatorioId);
+        this.notificacao.sucesso('Refeição fechada e relatório solicitado. Acompanhe no Dashboard — aceitação e '
           + 'desperdício passam a ser calculados a partir do que foi registrado aqui.');
       },
       error: (erro: HttpErrorResponse) => this.notificacao.erro(this.mensagem(erro)),

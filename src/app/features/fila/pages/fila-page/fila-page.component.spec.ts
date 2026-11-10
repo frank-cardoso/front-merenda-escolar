@@ -1,3 +1,4 @@
+import { traduzirMotivo } from '../../application/motivos';
 import { Component, output } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -59,16 +60,16 @@ describe('FilaPageComponent', () => {
     req.flush({ resultado: 'BLOQUEADO', sinal: 'VERMELHO', motivo: 'ROSTO_NAO_RECONHECIDO' });
   });
 
-  it('autorizada anuncia o aluno reconhecido em destaque', () => {
+  it('autorizada anuncia o aluno com a refeição e o cardápio', () => {
     fixture.componentInstance.validarFacial('data:image/jpeg;base64,AAA');
     http.expectOne(url).flush({
       resultado: 'AUTORIZADO', sinal: 'VERDE', alunoId: '1', alunoNome: 'Helena Duarte',
-      turno: 'MANHA', cardapio: 'Arroz', registradoEm: '2026-11-07T10:00:00', motivo: null,
+      tipoRefeicaoId: '9', refeicao: 'Almoço', cardapio: 'Arroz', registradoEm: '2026-11-07T10:00:00', motivo: null,
     });
     fixture.detectChanges();
 
     expect(notificacao.destaque).toHaveBeenCalledOnceWith(
-      { tipo: 'sucesso', titulo: 'Helena Duarte', selo: 'AUTORIZADO', detalhe: 'Arroz' });
+      { tipo: 'sucesso', titulo: 'Helena Duarte', selo: 'AUTORIZADO', detalhe: 'Almoço • Arroz' });
     expect(fixture.componentInstance.autorizadasNaSessao()).toBe(1);
   });
 
@@ -79,6 +80,43 @@ describe('FilaPageComponent', () => {
     expect(notificacao.destaque).toHaveBeenCalledOnceWith({
       tipo: 'erro', titulo: 'Aluno não identificado', selo: 'BLOQUEADO',
       detalhe: 'Rosto parecido com mais de um aluno. Use o QR Code para confirmar.',
+    });
+  });
+
+  it('bloqueada fora da refeição da turma traduz o motivo', () => {
+    fixture.componentInstance.validarFacial('data:image/jpeg;base64,AAA');
+    http.expectOne(url).flush({
+      resultado: 'BLOQUEADO', sinal: 'VERMELHO', alunoNome: 'Aluno Teste', motivo: 'REFEICAO_NAO_PREVISTA_PARA_TURMA',
+    });
+
+    expect(notificacao.destaque).toHaveBeenCalledOnceWith({
+      tipo: 'erro', titulo: 'Aluno Teste', selo: 'BLOQUEADO',
+      detalhe: 'Esta refeição não é servida para a turma do aluno.',
+    });
+  });
+
+  it('bloqueio por turma com os campos novos explica a turma e os turnos da refeição', () => {
+    fixture.componentInstance.validarFacial('data:image/jpeg;base64,AAA');
+    http.expectOne(url).flush({
+      resultado: 'BLOQUEADO', sinal: 'VERMELHO', alunoNome: 'Aluno Teste', motivo: 'REFEICAO_NAO_PREVISTA_PARA_TURMA',
+      refeicao: 'Almoço', turnoDaTurma: 'MANHA', turnosDaRefeicao: ['INTEGRAL'],
+    });
+
+    expect(notificacao.destaque).toHaveBeenCalledOnceWith({
+      tipo: 'erro', titulo: 'Aluno Teste', selo: 'BLOQUEADO',
+      detalhe: 'Almoço é para turmas Integral; a turma do aluno é Manhã.',
+    });
+  });
+
+  it('bloqueio por turma sem turnoDaTurma nem turnosDaRefeicao usa o texto do motivo', () => {
+    fixture.componentInstance.validarFacial('data:image/jpeg;base64,AAA');
+    http.expectOne(url).flush({
+      resultado: 'BLOQUEADO', sinal: 'VERMELHO', alunoNome: 'Aluno Teste', motivo: 'REFEICAO_NAO_PREVISTA_PARA_TURMA',
+      refeicao: 'Almoço', turnoDaTurma: null, turnosDaRefeicao: null,
+    });
+
+    expect(notificacao.destaque).toHaveBeenCalledOnceWith({
+      tipo: 'erro', titulo: 'Aluno Teste', selo: 'BLOQUEADO', detalhe: traduzirMotivo('REFEICAO_NAO_PREVISTA_PARA_TURMA'),
     });
   });
 

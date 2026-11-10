@@ -7,6 +7,7 @@ import { parseAlunoQrCode } from '../../application/qr-code-parser';
 import { FilaApiService } from '../../data-access/fila-api.service';
 import { MetodoIdentificacao, ValidarConsumoResponse } from '../../models/fila.models';
 import { CameraFotoComponent } from '../../../../shared/components/camera-foto/camera-foto.component';
+import { explicarBloqueioPorTurma } from '../../../../shared/refeicao/turnos';
 import { NotificacaoService } from '../../../../shared/notificacao/notificacao.service';
 
 @Component({
@@ -79,8 +80,19 @@ export class FilaPageComponent {
       tipo: autorizado ? 'sucesso' : 'erro',
       titulo: resultado.alunoNome || 'Aluno não identificado',
       selo: resultado.resultado,
-      detalhe: autorizado ? resultado.cardapio : traduzirMotivo(resultado.motivo),
+      detalhe: autorizado ? this.detalheAutorizado(resultado) : this.detalheBloqueio(resultado),
     });
+  }
+
+  private detalheAutorizado({ refeicao, cardapio }: ValidarConsumoResponse): string | null {
+    return refeicao ? `${refeicao} • ${cardapio}` : cardapio;
+  }
+
+  private detalheBloqueio({ motivo, refeicao, turnoDaTurma, turnosDaRefeicao }: ValidarConsumoResponse): string | null {
+    if (motivo === 'REFEICAO_NAO_PREVISTA_PARA_TURMA' && refeicao && turnoDaTurma && turnosDaRefeicao) {
+      return explicarBloqueioPorTurma(refeicao, turnosDaRefeicao, turnoDaTurma);
+    }
+    return traduzirMotivo(motivo);
   }
 
   private montarMensagemErro(erro: HttpErrorResponse): string {

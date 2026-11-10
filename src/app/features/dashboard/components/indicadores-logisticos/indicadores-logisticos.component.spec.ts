@@ -14,6 +14,24 @@ describe('IndicadoresLogisticosComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain('0%');
   });
 
+  it('mostra o nome da refeição e cai no turno em fotografia antiga', () => {
+    const base = {
+      status: 'DISPONIVEL', dataReferencia: '2026-09-17', inicioHistorico: '2026-08-19',
+      execucaoPlanejamento: null, atendimentos: { alunosUnicos: 1, repeticoes: 0 }, topComidas: [],
+      aceitacaoItens: [], aceitacaoItensSemana: [], porTurma: [], avisos: [], ingredientes: null,
+      rotacaoCardapio: null,
+    };
+    const fixture = TestBed.createComponent(IndicadoresLogisticosComponent);
+    fixture.componentRef.setInput('dados', { ...base, refeicao: { id: 'id-almoco', nome: 'Almoço' } });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Almoço • Todas as turmas');
+
+    const antiga = TestBed.createComponent(IndicadoresLogisticosComponent);
+    antiga.componentRef.setInput('dados', { ...base, turno: 'MANHA' });
+    antiga.detectChanges();
+    expect(antiga.nativeElement.textContent).toContain('Turno MANHA • Todas as turmas');
+  });
+
   it('exibe execução acima de 100 sem estourar a barra nem inferir adesão da turma', () => {
     const fixture = TestBed.createComponent(IndicadoresLogisticosComponent);
     fixture.componentRef.setInput('dados', {

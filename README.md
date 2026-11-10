@@ -1,6 +1,6 @@
 # Frontend — Controle de Merenda Escolar
 
-Interface web do protótipo de controle da merenda escolar: operação da fila (QR Code e reconhecimento facial), cadastro de cardápios, alunos e turmas, fechamento do turno e dashboard gerencial. Feita em Angular 20 com Standalone Components, signals e Tailwind CSS 4.
+Interface web do protótipo de controle da merenda escolar: operação da fila (QR Code e reconhecimento facial), cadastro de cardápios, alunos e turmas, fechamento da refeição e dashboard gerencial. Feita em Angular 20 com Standalone Components, signals e Tailwind CSS 4.
 
 Este repositório é só a camada de apresentação. Regras de negócio, persistência e auditoria ficam na API (`api-merenda-escolar`); o Angular cuida de captura, exibição e integração HTTP.
 
@@ -10,7 +10,7 @@ O protótipo é formado por três repositórios que rodam juntos:
 
 | Repositório | Papel | Stack | Porta local |
 |---|---|---|---|
-| `front-merenda-escolar` | Telas: fila (QR Code e facial), cardápio, fechamento de turno, cadastro de alunos e turmas, dashboard | Angular 20, Tailwind 4, Chart.js, html5-qrcode | 4200 |
+| `front-merenda-escolar` | Telas: fila (QR Code e facial), cardápio, fechamento da refeição, cadastro de alunos e turmas, dashboard | Angular 20, Tailwind 4, Chart.js, html5-qrcode | 4200 |
 | `api-merenda-escolar` | Regras de negócio, persistência, auditoria da fila, consolidação, jobs de relatório com LLM | Spring Boot 3.5, Java 25, Spring AI, Flyway, H2 em arquivo | 8081 |
 | `analytics-merenda-escolar` | Cálculos determinísticos (indicadores, tendências, previsão) e reconhecimento facial (DeepFace) | FastAPI, Python 3.12+ | 8000 |
 
@@ -92,7 +92,7 @@ Não há script de lint nem formatador instalado. O `package.json` traz apenas a
   pnpm test --watch=false --browsers=ChromeHeadless
   ```
 
-- Há 12 arquivos `*.spec.ts`: `app.spec.ts`; `qr-code-parser`, `qr-scanner`, `resultado-validacao` e `fila-page` (fila); `aluno-page` e `transferencia-form` (cadastro); `cardapio-form` (cardápio); `dashboard-page` e `indicadores-logisticos` (dashboard); `fechamento-page` (fechamento); `camera-foto` (componente compartilhado, inclusive o "Usar imagem"). Ainda sem spec: `turma-page` e `cardapio-page`.
+- Há 23 arquivos `*.spec.ts`: `app.spec.ts`; `qr-code-parser`, `qr-scanner`, `motivos` e `fila-page` (fila); `aluno-page`, `turma-page` e `transferencia-form` (cadastro); `grade-refeicoes-page` (grade de refeições); `cardapio-form` e `cardapio-page` (cardápio); `dashboard-page`, `indicadores-logisticos`, `pendencias-fechamento` e `relatorio-ia` (dashboard); `fechamento-page`, `painel-dia` e `fechamento-painel-api.service` (fechamento); `camera-foto` (inclusive o "Usar imagem"), `modal`, `notificacao-host`, `notificacao.service`, `tipo-refeicao-api.service` e `turnos` (compartilhados).
 - **Chrome sem sandbox.** Em máquina onde o Chrome não consegue abrir o sandbox (por exemplo, sem permissão para user namespaces), o Karma falha ao iniciar o navegador. Aponte `CHROME_BIN` para um script que chame o Chrome com `--no-sandbox`, ou use um launcher customizado com essa flag; só em máquina de desenvolvimento.
 
 ## Mapa do código
@@ -109,13 +109,14 @@ src/
     ├── app.config.ts              provideRouter, provideHttpClient(withFetch()), zone com eventCoalescing
     ├── app.routes.ts              Rotas, todas com carregamento sob demanda (loadComponent)
     ├── shared/
-    │   └── components/
-    │       └── camera-foto/       Captura de foto pela webcam (fila facial e cadastro de rosto)
+    │   ├── components/
+    │   │   └── camera-foto/       Captura de foto pela webcam (fila facial e cadastro de rosto)
+    │   └── refeicao/              Grade de refeições (GET /tipos-refeicao) e o rótulo com a janela
     └── features/
         ├── cadastro/              Alunos e turmas
-        ├── cardapio/              Cardápios por data e turno
+        ├── cardapio/              Cardápios por data e refeição
         ├── dashboard/             Indicadores e análise IA
-        ├── fechamento/            Fechamento do turno (sobras)
+        ├── fechamento/            Fechamento da refeição (sobras)
         └── fila/                  Operação da fila
 ```
 
@@ -126,31 +127,33 @@ O Tailwind 4 não usa `tailwind.config.*`: entra pelo plugin `@tailwindcss/postc
 | Feature | Rota | Tela |
 |---|---|---|
 | `fila` | `/fila` | Operação na fila: identifica o aluno por QR Code ou reconhecimento facial e mostra AUTORIZADO ou BLOQUEADO, com sinal verde ou vermelho. |
-| `cardapio` | `/cardapio` | Cadastro, edição e exclusão de cardápios por data e turno, com itens escolhidos do catálogo de receitas. |
+| `cardapio` | `/cardapio` | Cadastro, edição e exclusão de cardápios por data e refeição, com itens escolhidos do catálogo de receitas. |
 | `cadastro` | `/alunos` | Alunos: listagem, criação, edição, detalhe com turma vigente e histórico de vínculos, transferência de turma e cadastro de rosto. |
-| `cadastro` | `/turmas` | Turmas: listagem, criação, edição e exclusão. |
-| `fechamento` | `/fechamento` | Fechamento do turno: quem serviu registra o preparado e as sobras de cada item; ao fechar, um relatório IA é solicitado. |
+| `cadastro` | `/turmas` | Turmas: listagem, criação, edição e exclusão, com o turno por extenso e a coluna Refeições (o direito de cada turma). |
+| `grade-refeicoes` | `/grade-refeicoes` | Grade de refeições: lista, cria e edita cada refeição (nome, janela e turnos com direito). |
+| `fechamento` | `/fechamento` | Fechamento da refeição: quem serviu registra o preparado e as sobras de cada item; ao fechar, um relatório IA é solicitado. |
 | `dashboard` | `/dashboard` | Gestão: aba Indicadores (números determinísticos) e aba Análise IA (histórico e geração de relatório). |
 
 ### Rotas
 
-Definidas em `src/app/app.routes.ts`. Todas carregam o componente sob demanda. O menu do cabeçalho (`app.ts`) segue a ordem Fila, Cardápios, Alunos, Turmas, Fechamento, Dashboard.
+Definidas em `src/app/app.routes.ts`. Todas carregam o componente sob demanda. O menu do cabeçalho (`app.ts`) segue a ordem Fila, Cardápios, Refeições, Alunos, Turmas, Fechamento, Dashboard.
 
 | Rota | Componente | Chamadas à API (prefixo `/api/v1`) |
 |---|---|---|
 | `/fila` | `FilaPageComponent` | `POST /fila/validacoes` |
-| `/cardapio` | `CardapioPageComponent` | `GET` e `POST /cardapios`; `PUT` e `DELETE /cardapios/{id}`; `GET /receitas` |
+| `/cardapio` | `CardapioPageComponent` | `GET` e `POST /cardapios`; `PUT` e `DELETE /cardapios/{id}`; `GET /receitas`; `GET /tipos-refeicao` |
+| `/grade-refeicoes` | `GradeRefeicoesPageComponent` | `GET` e `POST /tipos-refeicao`; `PUT /tipos-refeicao/{id}` |
 | `/alunos` | `AlunoPageComponent` | `GET` e `POST /alunos`; `GET` e `PUT /alunos/{id}`; `POST /alunos/{id}/transferencias`; `POST /alunos/{id}/rosto`; `GET /turmas` |
-| `/turmas` | `TurmaPageComponent` | `GET` e `POST /turmas`; `PUT` e `DELETE /turmas/{id}` |
-| `/fechamento` | `FechamentoPageComponent` (export default) | `GET /cardapios`; `GET /gestao/consolidacoes`; `GET /medicoes-sobra?data&turno`; `POST /medicoes-sobra/fechamento`; `POST /relatorios-ia` |
-| `/dashboard` | `DashboardPageComponent` | `GET /gestao/consolidacoes`; `GET /gestao/indicadores`; `GET /gestao/cardapios-analise`; `GET /relatorios-ia?data&turno`; `POST /relatorios-ia`; `GET /relatorios-ia/{id}` |
+| `/turmas` | `TurmaPageComponent` | `GET` e `POST /turmas`; `PUT` e `DELETE /turmas/{id}`; `GET /tipos-refeicao` |
+| `/fechamento` | `FechamentoPageComponent` (export default) | `GET /tipos-refeicao`; `GET /fechamentos/dia?data`; `GET /cardapios`; `GET /gestao/consolidacoes`; `GET /medicoes-sobra?data&tipoRefeicaoId`; `POST /medicoes-sobra/fechamento`; `POST /relatorios-ia` |
+| `/dashboard` | `DashboardPageComponent` | `GET /tipos-refeicao`; `GET /fechamentos/pendencias?ate&dias=7`; `GET /gestao/consolidacoes`; `GET /gestao/indicadores`; `GET /relatorios-ia?data&tipoRefeicaoId`; `POST /relatorios-ia`; `GET /relatorios-ia/{id}` |
 | `''` e qualquer outra | — | Redirecionam para `/fila`. |
 
 ## Fila: QR Code e reconhecimento facial
 
 A tela `/fila` tem um seletor **QR Code / Reconhecimento facial**. Trocar o modo limpa o resultado e o erro exibidos. Os dois modos terminam na mesma chamada, `POST /api/v1/fila/validacoes`, com `metodoIdentificacao` (`QR_CODE` ou `FACIAL`): no QR Code vai o `alunoCodigo`; no modo facial vai só a `fotoBase64`, sem código. Autorização, bloqueio de consumo repetido e auditoria são responsabilidades exclusivas da API.
 
-A resposta traz `resultado` (`AUTORIZADO` ou `BLOQUEADO`), `sinal` (`VERDE` ou `VERMELHO`), nome do aluno, turno, cardápio e `motivo`. A tela também mostra quantas leituras foram autorizadas desde que foi aberta; é a contagem da sessão, não o total do dia.
+A resposta traz `resultado` (`AUTORIZADO` ou `BLOQUEADO`), `sinal` (`VERDE` ou `VERMELHO`), nome do aluno, refeição, cardápio e `motivo`. A refeição é descoberta pela API a partir do horário e da turma do aluno: a pessoa na fila não escolhe. A tela também mostra quantas leituras foram autorizadas desde que foi aberta; é a contagem da sessão, não o total do dia.
 
 ### Modo QR Code
 
@@ -206,6 +209,9 @@ A API devolve um código em `motivo`; `fila/components/resultado-validacao/resul
 | `CONSUMO_RECENTE_BLOQUEADO` | Consumo recente: este aluno já foi validado há pouco tempo. |
 | `ALUNO_NAO_ENCONTRADO_OU_INATIVO` | Aluno não encontrado ou inativo. |
 | `CARDAPIO_NAO_CONFIGURADO` | Cardápio não configurado. |
+| `FORA_DO_HORARIO_DE_REFEICAO` | Fora do horário de refeição. |
+| `REFEICAO_NAO_PREVISTA_PARA_TURMA` | Esta refeição não é servida para a turma do aluno. |
+| `GRADE_DE_REFEICOES_INVALIDA` | Grade de refeições não configurada ou inconsistente. Avise a coordenação. |
 | `FOTO_NAO_INFORMADA` | Nenhuma foto foi capturada para a validação facial. |
 | `ROSTO_NAO_DETECTADO` | Não foi possível detectar um rosto na foto capturada. |
 | `ROSTO_NAO_RECONHECIDO` | Rosto não reconhecido entre os alunos cadastrados. Use o QR Code. |
@@ -241,33 +247,41 @@ A feature `cadastro` expõe duas rotas: `/alunos` e `/turmas`.
 
 ## Cardápios
 
-A rota `/cardapio` cadastra os cardápios servidos por data e turno (`MANHA`, `TARDE`, `NOITE`, `INTEGRAL`), com nome da refeição, descrição, itens e quantidade planejada. A fila, o fechamento e o dashboard usam esses dados.
+A rota `/cardapio` cadastra os cardápios servidos por data e **refeição**, escolhida numa lista com a grade da API (`GET /api/v1/tipos-refeicao`), cada opção com a janela, por exemplo `Almoço (11:30–13:00)`. O formulário pede ainda nome do cardápio, descrição, itens e quantidade planejada, e a tabela mostra a refeição de cada cardápio. A fila, o fechamento e o dashboard usam esses dados.
 
 Os itens são escolhidos do catálogo `GET /api/v1/receitas` e identificados por `receitaId`, não digitados por nome: a API recusa nome fora do catálogo, e nome não identifica nada de forma estável.
 
-## Fechamento do turno
+## Grade de refeições
 
-A rota `/fechamento` é onde quem serviu registra o que sobrou, por data e turno.
+A rota `/grade-refeicoes` (menu "Refeições") mostra a grade que a API mantém em `/api/v1/tipos-refeicao`: nome, janela (`07:00–08:00`) e os turnos com direito à refeição, em selos. **Nova refeição** e **Editar** abrem um formulário com nome, início e fim (campos de hora) e uma caixa por turno (Manhã, Tarde, Noite, Integral); o salvar fica desabilitado sem nome ou com horário vazio. Não há exclusão. Os erros 409 (nome repetido) e 422 (início depois do fim, sobreposição no mesmo turno) aparecem com o `detail` da API e o formulário continua aberto. A grade define quem tem direito a cada refeição pelo turno da turma, e as mudanças valem daqui para frente.
 
-- A tela localiza o cardápio da data e do turno. Sem cardápio, avisa; se algum item não estiver vinculado ao catálogo de receitas, pede para regravar o cardápio antes de medir.
+- **Turmas:** o turno aparece por extenso (rótulos em `shared/refeicao/turnos.ts`), e a coluna **Refeições** lista o que cada turma recebe pela grade.
+- **Bloqueio na fila:** quando a API traz a refeição, o turno da turma e os turnos da refeição, o detalhe vira, por exemplo, "Almoço é para turmas Integral; a turma do aluno é Manhã."; sem esses campos, vale o texto do motivo.
+
+## Fechamento da refeição
+
+A rota `/fechamento` (título **Fechamento da refeição**) é onde quem serviu registra o que sobrou, por data e refeição. No topo, o **painel do dia** (`GET /api/v1/fechamentos/dia?data`) mostra as refeições da grade com a janela e a situação de cada uma (`SEM_CARDAPIO`, `FECHADA`, `AGUARDANDO`, `EM_ANDAMENTO` ou `PENDENTE`), os alunos na fila e quantos itens já foram medidos. Clicar numa refeição a seleciona; a refeição inicial é a escolhida pelo painel (a data e a refeição também podem vir pela URL, `?data=&refeicao=`, como nos links do aviso do dashboard). Fechar fora da janela continua permitido: nada bloqueia o fechamento.
+
+- A tela localiza o cardápio da data e da refeição. Sem cardápio, avisa; se algum item não estiver vinculado ao catálogo de receitas, pede para regravar o cardápio antes de medir.
 - Para cada item pede três números: porções preparadas, sobra na panela (não distribuída) e resto no prato. O servido não é informado: é derivado (preparado menos sobra na panela).
-- O preparado começa sugerido com a contagem de autorizações da fila no turno (`GET /gestao/consolidacoes`), e as perdas começam zeradas. A contagem não vira o servido por item, porque o QR registra uma refeição e não diz quais itens o aluno pegou.
-- Se já houver medições para a data e o turno (`GET /medicoes-sobra`), os valores são carregados para edição, com aviso de que a alteração pode afetar indicadores e relatórios já gerados.
+- O preparado começa sugerido com a contagem de autorizações da fila na refeição (`GET /gestao/consolidacoes`), e as perdas começam zeradas. A contagem não vira o servido por item, porque o QR registra uma refeição e não diz quais itens o aluno pegou.
+- Se já houver medições para a data e a refeição (`GET /medicoes-sobra`), os valores são carregados para edição, com aviso de que a alteração pode afetar indicadores e relatórios já gerados.
 - Validações na tela, repetidas pela API: a sobra na panela não pode passar do preparado, e o resto no prato não pode passar do servido.
-- Ao fechar, a tela envia `POST /medicoes-sobra/fechamento` e, em seguida, `POST /relatorios-ia` para a data e o turno.
+- Ao fechar, a tela envia `POST /medicoes-sobra/fechamento` e, em seguida, `POST /relatorios-ia` para a data e a refeição.
 
 ## Dashboard gerencial
 
-A rota `/dashboard` reúne a visão de gestão em duas abas com os mesmos filtros de **data** (padrão: hoje) e **turno** (padrão: `NOITE`), mais um filtro de **turma** preenchido com as turmas que tiveram atendimento no dia.
+A rota `/dashboard` reúne a visão de gestão em duas abas com os mesmos filtros de **data** (padrão: hoje) e **refeição** (a lista da grade, com a janela de cada uma; padrão: a primeira, Café da manhã), mais um filtro de **turma** preenchido com as turmas que tiveram atendimento no dia.
 
 - **Indicadores:** consulta a consolidação (`GET /api/v1/gestao/consolidacoes`) e os cálculos determinísticos do Python, via API (`GET /api/v1/gestao/indicadores`), incluindo meta, aceitação e atendimentos. Atualizar ou navegar pelos filtros não gera relatório nem chama o LLM.
-- **Análise IA:** carrega o histórico e permite gerar uma nova análise apenas pelo botão **Gerar análise IA**. Abrir um relatório salvo consulta o banco. Gráficos, metas e tabelas de indicadores são exibidos exclusivamente na aba Indicadores.
+- **Aviso de fechamentos pendentes:** só na aba Indicadores, acima dos cartões, em âmbar. Consulta `GET /api/v1/fechamentos/pendencias?ate=<data de referência>&dias=7` ao abrir e ao trocar a data e mostra, por exemplo, `2 refeições sem fechamento nos últimos 7 dias`, com um link por refeição (`09/03 • Café da manhã`) para `/fechamento?data=&refeicao=`. Sem pendências nada aparece; se a consulta falhar, o aviso some em silêncio e os indicadores seguem normais.
+- **Análise IA:** carrega o histórico e permite gerar uma nova análise apenas pelo botão **Gerar análise**. Abrir um relatório salvo consulta o banco. Os gráficos e as tabelas de indicadores ficam na aba Indicadores; o relatório da análise traz a sua própria tabela de itens.
 
-Alternar entre abas preserva o relatório selecionado e seu acompanhamento. Trocar data ou turno limpa a seleção (inclusive a turma) e cancela as consultas anteriores, para não misturar dados de turnos; isso não cancela um job já criado no backend. Relatórios antigos podem ser abertos mesmo sem cardápio ativo no filtro.
+Alternar entre abas preserva o relatório selecionado e seu acompanhamento. Trocar data ou refeição limpa a seleção (inclusive a turma) e cancela as consultas anteriores, para não misturar dados de refeições; isso não cancela um job já criado no backend. Relatórios antigos podem ser abertos mesmo sem cardápio ativo no filtro.
 
 ### Aba Indicadores
 
-- Meta interna de execução (padrão 80%, configurada na API em `meta-execucao-percentual`), alunos únicos e repetições do dia e turno.
+- Meta interna de execução (padrão 80%, configurada na API em `meta-execucao-percentual`), alunos únicos e repetições do dia e refeição.
 - Gráfico de barras com Chart.js da aceitação dos itens, calculada a partir dos fechamentos — (porções servidas − resto no prato) / porções servidas — nos últimos 30 dias (Mês) ou 7 dias (Semana) até a data de referência. Uma tabela acessível repete os valores: item, aceitação, consumidas estimadas sobre servidas, resto e número de fechamentos.
 - Autorizações por turma (alunos únicos, autorizações e repetições). A turma exibida é a vigente do aluno na data do consumo; aluno sem enturmação aparece em "Sem turma". Adesão e rejeição não são inferidas sem dados de presença.
 - O filtro de turma recorta a tabela por turma e as métricas da fila, e é enviado como `turmaId` ao gerar um relatório IA.
@@ -279,16 +293,17 @@ Alternar entre abas preserva o relatório selecionado e seu acompanhamento. Troc
 
 O dashboard separa explicitamente as responsabilidades:
 
-- **Resumo operacional do dia:** cardápio, refeições planejadas, autorizações registradas, diferença do planejamento, bloqueios e execução registrada do dia e turno.
+- **Resumo operacional do dia:** cardápio, refeições planejadas, autorizações registradas, diferença do planejamento, bloqueios e execução registrada do dia e refeição.
 - **Aceitação alimentar — histórico de fechamentos:** aceitação dos itens em visão semanal ou mensal, desperdício medido e análise histórica de ingredientes.
 - **Autorizações por turma:** detalhamento dos registros da fila no dia; não comprova que a refeição foi consumida.
 
 ### Aba Análise IA
 
-- Histórico dos últimos 20 relatórios da data e turno (`GET /api/v1/relatorios-ia?data&turno`), listados com criação, status e provedor. Abrir um relatório exibe a análise persistida, sem nova chamada ao LLM; o snapshot permanece salvo no backend para rastreabilidade.
-- A pessoa escolhe primeiro um cardápio servido (`GET /api/v1/gestao/cardapios-analise`). Os itens e as datas de fechamento exibidos pertencem ao cardápio selecionado, e não à amostra geral do período.
-- A análise usa somente os dias em que todos os itens do cardápio foram fechados. **Gerar análise IA** só fica disponível com pelo menos 20 desses dias e ao menos um item escolhido, cada um com pelo menos 3 dias medidos.
-- Com uma turma selecionada, o relatório narra autorizações, alunos únicos e repetições só dessa turma; aceitação, execução do planejamento e ingredientes continuam do turno inteiro, porque o resto no prato não é medido por turma.
+- Histórico dos últimos 20 relatórios da data e refeição (`GET /api/v1/relatorios-ia?data&tipoRefeicaoId`), listados como `dd/mm/aaaa HH:mm · Concluído` (hora local, status traduzido, sem provedor). Abrir um relatório exibe a análise persistida, sem nova chamada ao LLM; o snapshot permanece salvo no backend para rastreabilidade.
+- Não há escolha de cardápio. A análise usa os fechamentos da refeição nos 30 dias até a data de referência; **Gerar análise** só fica disponível com pelo menos 20 dias com fechamento (`quantidadeFechamentosDoMes` dos indicadores já carregados). O pedido envia só `dataReferencia` e `tipoRefeicaoId` (mais `turmaId` quando há turma).
+- O relatório (`RelatorioIaComponent`) mostra: cabeçalho com refeição e janela; cartões de Aceitação (meta 90%), Desperdício e Alunos atendidos (média por dia contra o planejado); **O que fazer** (`planoDeAcao`, com a mensagem de nenhuma ação quando vazio); tabela de itens ordenada pela aceitação crescente, com destaque para aceitação abaixo de 90% ou sobra na panela a partir de 10%; **Leitura da IA** (`resumoExecutivo`); e **Como foi calculado** recolhido, com as limitações.
+- Relatórios antigos (`schemaVersion` 5, sem `planoDeAcao`) continuam abrindo: sem "O que fazer", e as evidências e recomendações da versão anterior aparecem em "Como foi calculado" sob "Texto da versão anterior". Os campos novos (`planoDeAcao`, `sobraPercentual`, `mediaAtendidosDia`, `mediaPlanejadaDia`) são opcionais no front.
+- Com uma turma selecionada, o relatório narra autorizações, alunos únicos e repetições só dessa turma; aceitação, execução do planejamento e ingredientes continuam da refeição inteira, porque o resto no prato não é medido por turma.
 - Ao gerar, o front cria o job (`POST /api/v1/relatorios-ia`) e consulta `GET /api/v1/relatorios-ia/{id}` a cada 1,5 segundo, até 40 vezes, enquanto o relatório estiver em processamento. Passado esse limite, orienta reabrir o relatório pelo histórico.
 
 ## Organização por features
@@ -348,7 +363,7 @@ Essa decisão mantém cada área funcional autocontida. A fila, por exemplo, con
 - `core` não contém regra de apresentação específica de uma feature.
 - Regras de negócio de consumo permanecem no backend; o Angular cuida de captura, apresentação e integração HTTP.
 
-Exceção existente hoje: `fechamento-page.component.ts` importa `CardapioApiService` e o tipo `Turno` de `cardapio`, e `DashboardApiService` de `dashboard`. É candidato a ser promovido para `shared` ou `core` quando a regra for aplicada.
+Exceção existente hoje: `fechamento-page.component.ts` importa `CardapioApiService` de `cardapio` e `DashboardApiService` de `dashboard`. É candidato a ser promovido para `shared` ou `core` quando a regra for aplicada.
 
 ## Bibliotecas principais
 

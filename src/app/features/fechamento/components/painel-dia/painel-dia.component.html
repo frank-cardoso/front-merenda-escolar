@@ -1,0 +1,26 @@
+<section aria-labelledby="titulo-painel-dia" class="space-y-3">
+  <h3 id="titulo-painel-dia" class="text-xs font-bold uppercase tracking-wider text-slate-600">Refeições do dia</h3>
+  <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    @for (refeicao of refeicoes(); track refeicao.tipoRefeicaoId) {
+      <li>
+        <button type="button"
+                class="flex h-full w-full flex-col gap-2 rounded-xl border bg-surface-card p-4 text-left shadow-xs transition-colors hover:bg-surface-main focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-60"
+                [class.border-brand-500]="refeicao.tipoRefeicaoId === selecionada()"
+                [class.border-slate-200]="refeicao.tipoRefeicaoId !== selecionada()"
+                [attr.aria-current]="refeicao.tipoRefeicaoId === selecionada() ? 'true' : null"
+                [disabled]="refeicao.situacao === 'SEM_CARDAPIO'"
+                (click)="escolher.emit(refeicao.tipoRefeicaoId)">
+          <span class="text-sm font-bold text-slate-900">{{ refeicao.refeicao }}</span>
+          <span class="text-xs text-slate-500">{{ janela(refeicao) }}</span>
+          <span class="inline-flex w-fit rounded-full border px-2.5 py-0.5 text-xs font-semibold" [class]="classesSelo(refeicao)">
+            {{ rotuloSelo(refeicao) }}
+          </span>
+          @if (refeicao.situacao !== 'SEM_CARDAPIO') {
+            <span class="text-xs text-slate-600">{{ refeicao.consumosAutorizados }} alunos na fila</span>
+            <span class="text-xs text-slate-600">{{ refeicao.itensMedidos }}/{{ refeicao.itensCardapio }} itens</span>
+          }
+        </button>
+      </li>
+    }
+  </ul>
+</section>

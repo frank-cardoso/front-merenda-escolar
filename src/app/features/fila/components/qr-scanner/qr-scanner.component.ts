@@ -13,7 +13,7 @@ export class QrScannerComponent implements OnDestroy {
   readonly codigoLido = output<string>();
   readonly scannerId = `qr-reader-${Math.random().toString(36).slice(2)}`;
   readonly estado = signal<EstadoScanner>('inativo');
-  readonly mensagem = signal('Aponte a camera para um QR Code de aluno.');
+  readonly mensagem = signal('Aponte a câmera para um QR Code de aluno.');
   readonly arquivoSelecionado = signal<string | null>(null);
 
   private readonly zone = inject(NgZone);
@@ -29,7 +29,7 @@ export class QrScannerComponent implements OnDestroy {
     if (this.estado() === 'carregando' || this.estado() === 'lendo') return;
 
     this.estado.set('carregando');
-    this.mensagem.set('Solicitando permissao da camera...');
+    this.mensagem.set('Solicitando permissão da câmera...');
 
     try {
       this.scanner = this.scanner ?? new Html5Qrcode(this.scannerId);
@@ -40,10 +40,10 @@ export class QrScannerComponent implements OnDestroy {
         () => undefined,
       );
       this.estado.set('lendo');
-      this.mensagem.set('Camera ativa. Aproxime o QR Code do centro do quadro.');
+      this.mensagem.set('Câmera ativa. Aproxime o QR Code do centro do quadro.');
     } catch {
       this.estado.set('erro');
-      this.mensagem.set('Nao foi possivel acessar a camera. Verifique a permissao do navegador.');
+      this.mensagem.set('Não foi possível acessar a câmera. Verifique a permissão do navegador.');
     }
   }
 
@@ -76,7 +76,7 @@ export class QrScannerComponent implements OnDestroy {
       this.mensagem.set('QR Code lido pela imagem.');
     } catch {
       this.estado.set('erro');
-      this.mensagem.set('Nao foi possivel ler um QR Code valido nessa imagem.');
+      this.mensagem.set('Não foi possível ler um QR Code válido nessa imagem.');
     } finally {
       input.value = '';
     }

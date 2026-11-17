@@ -1,5 +1,3 @@
-import { Turno } from '../../cardapio/models/cardapio.models';
-
 /**
  * Uma linha do fechamento: um item do cardápio e os três números que a cozinha observa.
  *
@@ -17,7 +15,7 @@ export interface LinhaFechamento {
 
 export interface MedicaoSobraRequest {
   data: string;
-  turno: Turno;
+  tipoRefeicaoId: string;
   receitaId: string;
   porcoesPreparadas: number;
   porcoesServidas: number;
@@ -27,7 +25,7 @@ export interface MedicaoSobraRequest {
 
 export interface MedicaoSobraResponse {
   data: string;
-  turno: Turno;
+  tipoRefeicaoId: string;
   receitaId: string;
   porcoesPreparadas: number;
   porcoesServidas: number;

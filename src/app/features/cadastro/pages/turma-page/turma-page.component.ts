@@ -1,0 +1,142 @@
+import { HttpErrorResponse } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { finalize } from 'rxjs';
+import { NotificacaoService } from '../../../../shared/notificacao/notificacao.service';
+import { ModalComponent } from '../../../../shared/components/modal/modal.component';
+import { montarMensagemErro } from '../../application/mensagem-erro';
+import { TurmaApiService } from '../../data-access/turma-api.service';
+import { Turma, TurmaRequest, Turno } from '../../models/cadastro.models';
+import { TipoRefeicao } from '../../../../shared/refeicao/tipo-refeicao.models';
+import { TipoRefeicaoApiService } from '../../../../shared/refeicao/tipo-refeicao-api.service';
+import { refeicoesDoTurno, rotuloTurno } from '../../../../shared/refeicao/turnos';
+
+@Component({
+  selector: 'app-turma-page',
+  imports: [FormsModule, ModalComponent],
+  templateUrl: './turma-page.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class TurmaPageComponent implements OnInit {
+  private readonly notificacao = inject(NotificacaoService);
+  private readonly turmaApi = inject(TurmaApiService);
+  private readonly tipoRefeicaoApi = inject(TipoRefeicaoApiService);
+
+  readonly rotuloTurno = rotuloTurno;
+  readonly turnos: Turno[] = ['MANHA', 'TARDE', 'NOITE', 'INTEGRAL'];
+
+  readonly turmas = signal<Turma[]>([]);
+  /** `null` quando a grade não carregou: a coluna e a dica somem, o resto da tela segue. */
+  readonly grade = signal<TipoRefeicao[] | null>(null);
+  readonly carregando = signal(false);
+  readonly salvando = signal(false);
+  readonly emEdicao = signal<Turma | null>(null);
+  readonly formularioAberto = signal(false);
+
+  readonly codigo = signal('');
+  readonly descricao = signal('');
+  readonly turno = signal<Turno>('MANHA');
+  readonly quantidadeMaxima = signal<number | null>(null);
+
+  readonly capacidadeTotal = computed(() =>
+    this.turmas().reduce((soma, turma) => soma + (turma.quantidadeMaximaAlunos ?? 0), 0));
+  readonly turnoPrincipal = computed(() => {
+    const contagem = new Map<Turno, number>();
+    for (const turma of this.turmas()) contagem.set(turma.turno, (contagem.get(turma.turno) ?? 0) + 1);
+    let melhor: { turno: Turno; total: number } | null = null;
+    for (const [turno, total] of contagem) {
+      if (!melhor || total > melhor.total) melhor = { turno, total };
+    }
+    return melhor;
+  });
+
+  ngOnInit(): void {
+    this.carregar();
+    this.tipoRefeicaoApi.listar().subscribe({
+      next: (grade) => this.grade.set(grade),
+      error: () => this.grade.set(null),
+    });
+  }
+
+  refeicoesDaTurma(turno: Turno): TipoRefeicao[] {
+    return refeicoesDoTurno(this.grade() ?? [], turno);
+  }
+
+  readonly nomesRefeicoesDoTurno = computed(() =>
+    this.refeicoesDaTurma(this.turno()).map((refeicao) => refeicao.nome).join(', '));
+
+  carregar(): void {
+    this.carregando.set(true);
+    this.turmaApi.listar()
+      .pipe(finalize(() => this.carregando.set(false)))
+      .subscribe({
+        next: (turmas) => this.turmas.set(turmas),
+        error: (erro: HttpErrorResponse) => this.notificacao.erro(montarMensagemErro(erro)),
+      });
+  }
+
+  abrirNova(): void {
+    this.preencher(null);
+    this.formularioAberto.set(true);
+  }
+
+  abrirEdicao(turma: Turma): void {
+    this.preencher(turma);
+    this.formularioAberto.set(true);
+  }
+
+  fecharFormulario(): void {
+    this.formularioAberto.set(false);
+    this.emEdicao.set(null);
+  }
+
+  formularioValido(): boolean {
+    return this.codigo().trim().length > 0 && this.descricao().trim().length > 0;
+  }
+
+  salvar(): void {
+    if (!this.formularioValido()) return;
+
+    const request: TurmaRequest = {
+      codigo: this.codigo().trim(),
+      descricao: this.descricao().trim(),
+      turno: this.turno(),
+      quantidadeMaximaAlunos: this.quantidadeMaxima() ? Number(this.quantidadeMaxima()) : null,
+    };
+    const emEdicao = this.emEdicao();
+    const operacao = emEdicao
+      ? this.turmaApi.atualizar(emEdicao.id, request)
+      : this.turmaApi.criar(request);
+
+    this.salvando.set(true);
+    operacao.pipe(finalize(() => this.salvando.set(false))).subscribe({
+      next: () => {
+        this.notificacao.sucesso(emEdicao ? 'Turma atualizada.' : 'Turma cadastrada.');
+        this.fecharFormulario();
+        this.carregar();
+      },
+      error: (erro: HttpErrorResponse) => this.notificacao.erro(montarMensagemErro(erro)),
+    });
+  }
+
+  /** Turma em uso devolve 409; a mensagem da API e exibida como veio. */
+  excluir(turma: Turma): void {
+    if (!confirm(`Excluir a turma "${turma.codigo}"?`)) return;
+
+    this.turmaApi.excluir(turma.id).subscribe({
+      next: () => {
+        this.notificacao.sucesso('Turma excluída.');
+        this.carregar();
+      },
+      error: (erro: HttpErrorResponse) => this.notificacao.erro(montarMensagemErro(erro)),
+    });
+  }
+
+  private preencher(turma: Turma | null): void {
+    this.emEdicao.set(turma);
+    this.codigo.set(turma?.codigo ?? '');
+    this.descricao.set(turma?.descricao ?? '');
+    this.turno.set(turma?.turno ?? 'MANHA');
+    this.quantidadeMaxima.set(turma?.quantidadeMaximaAlunos ?? null);
+  }
+}

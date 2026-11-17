@@ -1,0 +1,41 @@
+<form class="space-y-4 rounded-xl border border-brand-200 bg-brand-50/50 p-5" (ngSubmit)="enviar()">
+  <div class="flex items-center justify-between">
+    <h3 class="text-base font-extrabold text-slate-900">Transferir {{ alunoNome() }}</h3>
+    <button type="button" class="text-sm font-semibold text-slate-500 hover:text-slate-800" (click)="cancelar.emit()">
+      Fechar
+    </button>
+  </div>
+  <p class="text-sm text-slate-600">
+    O vínculo atual termina no dia anterior à data da mudança e o novo começa nela.
+  </p>
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    <label class="text-sm font-semibold text-slate-700">
+      Nova turma
+      <select name="turmaId" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+              [ngModel]="turmaId()" (ngModelChange)="turmaId.set($event)">
+        <option value="">Selecione a turma</option>
+        @for (turma of turmas(); track turma.id) {
+          <option [value]="turma.id">
+            {{ turma.codigo }} - {{ turma.descricao }}{{ turma.id === turmaAtualId() ? ' (atual)' : '' }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="text-sm font-semibold text-slate-700">
+      Data da mudança
+      <input type="date" name="dataMudanca" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+             [ngModel]="dataMudanca()" (ngModelChange)="dataMudanca.set($event)" />
+    </label>
+  </div>
+
+  <div class="flex justify-end gap-3">
+    <button type="button" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" (click)="cancelar.emit()">
+      Cancelar
+    </button>
+    <button type="submit" class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-bold text-zinc-950 shadow-sm transition-colors hover:bg-brand-400 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400" [disabled]="!formularioValido() || salvando()">
+      {{ salvando() ? 'Transferindo...' : 'Transferir' }}
+    </button>
+  </div>
+</form>

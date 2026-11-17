@@ -1,50 +1,38 @@
-<form class="space-y-5 rounded-lg border border-slate-200 bg-white p-6 shadow-sm" (ngSubmit)="enviar()">
-  <div class="flex items-center justify-between">
-    <h3 class="text-lg font-bold text-slate-900">
-      {{ editando() ? 'Editar cardapio' : 'Novo cardapio' }}
-    </h3>
-    <button
-      type="button"
-      class="text-sm font-semibold text-slate-500 hover:text-slate-800"
-      (click)="cancelar.emit()"
-    >
-      Fechar
-    </button>
-  </div>
-
-  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+<form class="space-y-5" (ngSubmit)="enviar()">
+  <div class="grid gap-4 sm:grid-cols-2">
     <label class="text-sm font-semibold text-slate-700">
       Data
       <input
         type="date"
         name="data"
-        class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+        class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
         [ngModel]="data()"
         (ngModelChange)="data.set($event)"
       />
     </label>
 
     <label class="text-sm font-semibold text-slate-700">
-      Turno
+      Refeição
       <select
-        name="turno"
-        class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-        [ngModel]="turno()"
-        (ngModelChange)="turno.set($event)"
+        name="tipoRefeicaoId"
+        class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+        [ngModel]="tipoRefeicaoId()"
+        (ngModelChange)="tipoRefeicaoId.set($event)"
       >
-        @for (item of turnos; track item) {
-          <option [value]="item">{{ item }}</option>
+        <option value="">Selecione a refeição</option>
+        @for (tipo of tiposRefeicao(); track tipo.id) {
+          <option [value]="tipo.id">{{ rotuloRefeicao(tipo) }}</option>
         }
       </select>
     </label>
 
     <label class="text-sm font-semibold text-slate-700">
-      Refeicao
+      Nome do cardápio
       <input
         type="text"
         name="nomeRefeicao"
-        placeholder="Ex.: Almoco completo"
-        class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+        placeholder="Ex.: Almoço completo"
+        class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
         [ngModel]="nomeRefeicao()"
         (ngModelChange)="nomeRefeicao.set($event)"
       />
@@ -56,7 +44,7 @@
         type="number"
         name="quantidadePlanejada"
         min="0"
-        class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+        class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
         [ngModel]="quantidadePlanejada()"
         (ngModelChange)="quantidadePlanejada.set($event)"
       />
@@ -64,12 +52,12 @@
   </div>
 
   <label class="block text-sm font-semibold text-slate-700">
-    Descricao
+    Descrição
     <textarea
       name="descricao"
       rows="2"
-      placeholder="Observacoes sobre o cardapio (opcional)"
-      class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+      placeholder="Observações sobre o cardápio (opcional)"
+      class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
       [ngModel]="descricao()"
       (ngModelChange)="descricao.set($event)"
     ></textarea>
@@ -77,10 +65,10 @@
 
   <div class="space-y-3">
     <div class="flex items-center justify-between">
-      <p class="text-sm font-semibold text-slate-700">Itens do cardapio</p>
+      <p class="text-sm font-semibold text-slate-700">Itens do cardápio</p>
       <button
         type="button"
-        class="rounded-md border border-emerald-700 px-3 py-1 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
+        class="rounded-lg border border-brand-300 bg-brand-50 px-3 py-1 text-sm font-bold text-brand-800 hover:bg-brand-100"
         (click)="adicionarItem()"
       >
         + Adicionar item
@@ -91,7 +79,7 @@
       <div class="grid gap-2 sm:grid-cols-[1fr_180px_auto]">
         <select
           [name]="'item-receita-' + $index"
-          class="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
           [ngModel]="item.receitaId"
           (ngModelChange)="selecionarReceita($index, $event)"
         >
@@ -104,13 +92,13 @@
           type="text"
           [name]="'item-quantidade-' + $index"
           placeholder="Quantidade (ex.: 10 kg)"
-          class="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
           [ngModel]="item.quantidade"
           (ngModelChange)="atualizarQuantidade($index, $event)"
         />
         <button
           type="button"
-          class="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
           [disabled]="itens().length === 1"
           (click)="removerItem($index)"
         >
@@ -123,17 +111,17 @@
   <div class="flex justify-end gap-3">
     <button
       type="button"
-      class="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700"
+      class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
       (click)="cancelar.emit()"
     >
       Cancelar
     </button>
     <button
       type="submit"
-      class="rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:bg-slate-300"
+      class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-bold text-zinc-950 shadow-sm transition-colors hover:bg-brand-400 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
       [disabled]="!formularioValido() || salvando()"
     >
-      {{ salvando() ? 'Salvando...' : 'Salvar cardapio' }}
+      {{ salvando() ? 'Salvando...' : 'Salvar cardápio' }}
     </button>
   </div>
 </form>

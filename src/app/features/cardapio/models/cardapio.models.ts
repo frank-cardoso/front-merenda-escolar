@@ -1,5 +1,3 @@
-export type Turno = 'MANHA' | 'TARDE' | 'NOITE' | 'INTEGRAL';
-
 export interface Receita {
   id: string;
   nome: string;
@@ -16,7 +14,8 @@ export interface ItemCardapio {
 export interface Cardapio {
   id: string;
   data: string;
-  turno: Turno;
+  tipoRefeicaoId: string;
+  refeicao: string;
   nomeRefeicao: string;
   descricao: string | null;
   itens: ItemCardapio[];
@@ -26,7 +25,7 @@ export interface Cardapio {
 
 export interface CardapioRequest {
   data: string;
-  turno: Turno;
+  tipoRefeicaoId: string;
   nomeRefeicao: string;
   descricao: string | null;
   itens: ItemCardapio[];

@@ -8,7 +8,7 @@ import { FechamentoSobraRequest, MedicaoSobraRequest, MedicaoSobraResponse } fro
 export class FechamentoApiService {
   private readonly http = inject(HttpClient);
 
-  /** Uma chamada por item. Relançar o mesmo item no mesmo dia e turno sobrescreve. */
+  /** Uma chamada por item. Relançar o mesmo item no mesmo dia e refeição sobrescreve. */
   registrarMedicao(request: MedicaoSobraRequest): Observable<unknown> {
     return this.http.post(`${environment.apiBaseUrl}/medicoes-sobra`, request);
   }
@@ -17,9 +17,9 @@ export class FechamentoApiService {
     return this.http.post<MedicaoSobraResponse[]>(`${environment.apiBaseUrl}/medicoes-sobra/fechamento`, request);
   }
 
-  listarMedicoes(data: string, turno: string): Observable<MedicaoSobraResponse[]> {
+  listarMedicoes(data: string, tipoRefeicaoId: string): Observable<MedicaoSobraResponse[]> {
     return this.http.get<MedicaoSobraResponse[]>(`${environment.apiBaseUrl}/medicoes-sobra`, {
-      params: { data, turno },
+      params: { data, tipoRefeicaoId },
     });
   }
 }
